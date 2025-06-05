@@ -1,0 +1,6 @@
+django
+reportlab
+xlsxwriter
+django-crispy-forms
+django-chartjs
+crispy-bootstrap4

@@ -1,0 +1,189 @@
+{% extends 'inventory/base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}
+    {% if form.instance.pk %}
+        Modifier {{ form.instance.name }}
+    {% else %}
+        Nouveau Produit
+    {% endif %} - StockManager
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3">
+            {% if form.instance.pk %}
+                Modifier {{ form.instance.name }}
+            {% else %}
+                Nouveau Produit
+            {% endif %}
+        </h1>
+        <a href="{% url 'inventory:product_list' %}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left me-2"></i>Retour à la liste
+        </a>
+    </div>
+
+    <!-- Product Form Card -->
+    <div class="card">
+        <div class="card-body">
+            <form method="post" class="needs-validation" novalidate>
+                {% csrf_token %}
+                
+                <div class="row">
+                    <!-- Basic Information -->
+                    <div class="col-md-8">
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <h5 class="card-title mb-0">Informations de base</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        {{ form.name|as_crispy_field }}
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        {{ form.category|as_crispy_field }}
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    {{ form.description|as_crispy_field }}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Stock Information -->
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="card-title mb-0">Informations de stock</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-4 mb-3">
+                                        {{ form.price|as_crispy_field }}
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        {{ form.quantity|as_crispy_field }}
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        {{ form.minimum_stock|as_crispy_field }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Supplier Information -->
+                    <div class="col-md-4">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="card-title mb-0">Fournisseur</h5>
+                            </div>
+                            <div class="card-body">
+                                {{ form.supplier|as_crispy_field }}
+                                
+                                {% if form.instance.supplier %}
+                                    <div class="supplier-info mt-3">
+                                        <h6>Informations du fournisseur</h6>
+                                        <p class="mb-1"><strong>Email:</strong> {{ form.instance.supplier.email }}</p>
+                                        <p class="mb-1"><strong>Téléphone:</strong> {{ form.instance.supplier.phone }}</p>
+                                        <p class="mb-0"><strong>Adresse:</strong> {{ form.instance.supplier.address }}</p>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        {% if form.instance.pk %}
+                            <!-- Stock Movement History -->
+                            <div class="card mt-4">
+                                <div class="card-header">
+                                    <h5 class="card-title mb-0">Derniers mouvements</h5>
+                                </div>
+                                <div class="card-body p-0">
+                                    <div class="list-group list-group-flush">
+                                        {% for movement in form.instance.movements.all|slice:":5" %}
+                                            <div class="list-group-item">
+                                                <div class="d-flex justify-content-between align-items-center">
+                                                    <div>
+                                                        <small class="text-muted">{{ movement.date|date:"d/m/Y H:i" }}</small>
+                                                        <br>
+                                                        {{ movement.get_movement_type_display }}
+                                                    </div>
+                                                    <span class="{% if movement.movement_type == 'IN' %}text-success{% else %}text-danger{% endif %}">
+                                                        {% if movement.movement_type == 'IN' %}+{% else %}-{% endif %}{{ movement.quantity }}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        {% empty %}
+                                            <div class="list-group-item text-center text-muted">
+                                                Aucun mouvement
+                                            </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Form Actions -->
+                <div class="row mt-4">
+                    <div class="col-12">
+                        <div class="d-flex justify-content-end gap-2">
+                            <a href="{% url 'inventory:product_list' %}" class="btn btn-light">Annuler</a>
+                            <button type="submit" class="btn btn-primary">
+                                {% if form.instance.pk %}
+                                    <i class="fas fa-save me-2"></i>Enregistrer les modifications
+                                {% else %}
+                                    <i class="fas fa-plus me-2"></i>Créer le produit
+                                {% endif %}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Form validation
+(function () {
+    'use strict'
+    var forms = document.querySelectorAll('.needs-validation')
+    Array.prototype.slice.call(forms).forEach(function (form) {
+        form.addEventListener('submit', function (event) {
+            if (!form.checkValidity()) {
+                event.preventDefault()
+                event.stopPropagation()
+            }
+            form.classList.add('was-validated')
+        }, false)
+    })
+})()
+
+// Dynamic supplier info update
+document.querySelector('select[name="supplier"]').addEventListener('change', function(e) {
+    const supplierId = e.target.value;
+    if (supplierId) {
+        fetch(`/api/suppliers/${supplierId}/`)
+            .then(response => response.json())
+            .then(data => {
+                const supplierInfo = document.querySelector('.supplier-info');
+                if (supplierInfo) {
+                    supplierInfo.innerHTML = `
+                        <h6>Informations du fournisseur</h6>
+                        <p class="mb-1"><strong>Email:</strong> ${data.email}</p>
+                        <p class="mb-1"><strong>Téléphone:</strong> ${data.phone}</p>
+                        <p class="mb-0"><strong>Adresse:</strong> ${data.address}</p>
+                    `;
+                }
+            })
+            .catch(error => console.error('Error:', error));
+    }
+});
+</script>
+{% endblock %}
