@@ -1,4 +1,5 @@
 {% extends 'inventory/base.html' %}
+{% load currency_filters %}
 
 {% block title %}Statistiques - StockManager{% endblock %}
 
@@ -17,10 +18,10 @@
     <!-- Date Range Filter -->
     <div class="card mb-4">
         <div class="card-body">
-            <form method="get" class="row g-3">
+            <form method="get" class="row g-3" id="statsForm">
                 <div class="col-md-4">
                     <label class="form-label">Période d'analyse</label>
-                    <select name="period" class="form-select" onchange="this.form.submit()">
+                    <select name="period" class="form-select">
                         <option value="7" {% if period == '7' %}selected{% endif %}>7 derniers jours</option>
                         <option value="30" {% if period == '30' %}selected{% endif %}>30 derniers jours</option>
                         <option value="90" {% if period == '90' %}selected{% endif %}>90 derniers jours</option>
@@ -45,7 +46,7 @@
             <div class="card bg-primary text-white">
                 <div class="card-body">
                     <h6 class="card-title">Valeur Totale du Stock</h6>
-                    <h2 class="mb-0">{{ total_stock_value|floatformat:2 }} €</h2>
+                    <h2 class="mb-0">{{ total_stock_value|gnf }}</h2>
                     <small>{{ stock_value_change|floatformat:1 }}% depuis la période précédente</small>
                 </div>
             </div>
@@ -55,7 +56,7 @@
                 <div class="card-body">
                     <h6 class="card-title">Total Entrées</h6>
                     <h2 class="mb-0">{{ total_entries }}</h2>
-                    <small>Valeur: {{ total_entries_value|floatformat:2 }} €</small>
+                    <small>Valeur: {{ total_entries_value|gnf }}</small>
                 </div>
             </div>
         </div>
@@ -64,7 +65,7 @@
                 <div class="card-body">
                     <h6 class="card-title">Total Sorties</h6>
                     <h2 class="mb-0">{{ total_exits }}</h2>
-                    <small>Valeur: {{ total_exits_value|floatformat:2 }} €</small>
+                    <small>Valeur: {{ total_exits_value|gnf }}</small>
                 </div>
             </div>
         </div>
@@ -79,7 +80,48 @@
         </div>
     </div>
 
-    <!-- Charts Row 1 -->
+    <!-- Most Moved Products -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Produits les Plus Mouvementés</h5>
+                </div>
+                <div class="card-body">
+                    {% if most_moved_products %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Produit</th>
+                                        <th>Catégorie</th>
+                                        <th>Total Mouvements</th>
+                                        <th>Stock Actuel</th>
+                                        <th>Valeur</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for product in most_moved_products %}
+                                        <tr>
+                                            <td>{{ product.name }}</td>
+                                            <td>{{ product.category.name }}</td>
+                                            <td>{{ product.total_movements }}</td>
+                                            <td>{{ product.quantity }}</td>
+                                            <td>{{ product.price|gnf }}</td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p class="text-muted mb-0">Aucun mouvement de produit enregistré.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row -->
     <div class="row mb-4">
         <!-- Stock Movement Trends -->
         <div class="col-md-8">
@@ -104,37 +146,6 @@
                 <div class="card-body">
                     <div class="chart-container" style="height: 300px;">
                         <canvas id="categoryDistributionChart"></canvas>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Charts Row 2 -->
-    <div class="row mb-4">
-        <!-- Top Products -->
-        <div class="col-md-6">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">Produits les Plus Mouvementés</h5>
-                </div>
-                <div class="card-body">
-                    <div class="chart-container" style="height: 300px;">
-                        <canvas id="topProductsChart"></canvas>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Stock Value Evolution -->
-        <div class="col-md-6">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">Évolution de la Valeur du Stock</h5>
-                </div>
-                <div class="card-body">
-                    <div class="chart-container" style="height: 300px;">
-                        <canvas id="stockValueChart"></canvas>
                     </div>
                 </div>
             </div>
@@ -169,7 +180,7 @@
                                         <span class="badge bg-danger">{{ product.quantity }}</span>
                                     </td>
                                     <td>{{ product.minimum_stock }}</td>
-                                    <td>{{ product.stock_value|floatformat:2 }} €</td>
+                                    <td>{{ product.stock_value|gnf }}</td>
                                     <td>
                                         <a href="{% url 'inventory:stock_entry' %}?product={{ product.id }}" 
                                            class="btn btn-sm btn-success">
@@ -196,69 +207,90 @@ function formatDate(date) {
     return new Intl.DateTimeFormat('fr-FR').format(new Date(date));
 }
 
-// Stock Trends Chart
-fetch('{% url "inventory:stock_movement_chart" %}' + window.location.search)
-    .then(response => response.json())
-    .then(data => {
-        const ctx = document.getElementById('stockTrendsChart').getContext('2d');
-        new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: data.labels.map(formatDate),
-                datasets: [{
-                    label: 'Entrées',
-                    data: data.entries,
-                    borderColor: '#28a745',
-                    backgroundColor: 'rgba(40, 167, 69, 0.1)',
-                    fill: true
-                }, {
-                    label: 'Sorties',
-                    data: data.exits,
-                    borderColor: '#dc3545',
-                    backgroundColor: 'rgba(220, 53, 69, 0.1)',
-                    fill: true
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    y: {
-                        beginAtZero: true
-                    }
-                }
-            }
-        });
-    });
+// Chart instances
+let stockTrendsChart = null;
+let categoryChart = null;
 
-// Category Distribution Chart
-fetch('{% url "inventory:product_category_chart" %}')
-    .then(response => response.json())
-    .then(data => {
-        const ctx = document.getElementById('categoryDistributionChart').getContext('2d');
-        new Chart(ctx, {
-            type: 'doughnut',
-            data: {
-                labels: data.labels,
-                datasets: [{
-                    data: data.data,
-                    backgroundColor: [
-                        '#007bff', '#28a745', '#ffc107', '#dc3545',
-                        '#17a2b8', '#6c757d', '#6f42c1', '#e83e8c'
-                    ]
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        position: 'bottom'
+// Function to update charts
+function updateCharts() {
+    const form = document.getElementById('statsForm');
+    const formData = new FormData(form);
+    const queryString = new URLSearchParams(formData).toString();
+
+    // Update stock movement chart
+    fetch(`{% url "inventory:stock_movement_chart" %}?${queryString}`)
+        .then(response => response.json())
+        .then(data => {
+            const ctx = document.getElementById('stockTrendsChart').getContext('2d');
+            
+            if (stockTrendsChart) {
+                stockTrendsChart.destroy();
+            }
+            
+            stockTrendsChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.labels.map(formatDate),
+                    datasets: [{
+                        label: 'Entrées',
+                        data: data.entries,
+                        borderColor: '#28a745',
+                        backgroundColor: 'rgba(40, 167, 69, 0.1)',
+                        fill: true
+                    }, {
+                        label: 'Sorties',
+                        data: data.exits,
+                        borderColor: '#dc3545',
+                        backgroundColor: 'rgba(220, 53, 69, 0.1)',
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
                     }
                 }
-            }
+            });
         });
-    });
+
+    // Update category distribution chart
+    fetch('{% url "inventory:product_category_chart" %}')
+        .then(response => response.json())
+        .then(data => {
+            const ctx = document.getElementById('categoryDistributionChart').getContext('2d');
+            
+            if (categoryChart) {
+                categoryChart.destroy();
+            }
+            
+            categoryChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: data.labels,
+                    datasets: [{
+                        data: data.data,
+                        backgroundColor: [
+                            '#007bff', '#28a745', '#ffc107', '#dc3545',
+                            '#17a2b8', '#6c757d', '#6f42c1', '#e83e8c'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+        });
+}
 
 // Function to export charts
 function exportCharts() {
@@ -278,9 +310,15 @@ function exportCharts() {
     });
 }
 
-// Auto-submit form when date inputs change
-document.querySelectorAll('input[type="date"]').forEach(input => {
+// Initialize charts on page load
+document.addEventListener('DOMContentLoaded', function() {
+    updateCharts();
+});
+
+// Update charts when filters change
+document.querySelectorAll('#statsForm select, #statsForm input[type="date"]').forEach(input => {
     input.addEventListener('change', () => {
+        updateCharts();
         input.form.submit();
     });
 });

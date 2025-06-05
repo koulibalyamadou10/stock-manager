@@ -1,9 +1,0 @@
-django
-reportlab
-xlsxwriter
-django-crispy-forms
-django-chartjs
-crispy-bootstrap4
-gunicorn
-daphne
-twisted[http2,tls]

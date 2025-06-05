@@ -95,9 +95,9 @@
             <a href="{% url 'inventory:statistics' %}" class="sidebar-link {% if request.resolver_match.url_name == 'statistics' %}active{% endif %}">
                 <i class="fas fa-chart-bar me-2"></i> Statistiques
             </a>
-            <a href="{% url 'inventory:statistics' %}" class="sidebar-link {% if 'report' in request.resolver_match.url_name %}active{% endif %}">
+            <!-- {# <a href="{% url 'inventory:report_list' %}" class="sidebar-link {% if 'report' in request.resolver_match.url_name %}active{% endif %}">
                 <i class="fas fa-file-alt me-2"></i> Rapports
-            </a>
+            </a> #} -->
         </nav>
     </div>
 

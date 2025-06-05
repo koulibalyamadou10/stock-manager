@@ -1,0 +1,217 @@
+{% extends 'inventory/base.html' %}
+
+{% block title %}Historique des Mouvements - StockManager{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3">Historique des Mouvements</h1>
+        <div class="d-flex gap-2">
+            <a href="{% url 'inventory:export_movements' %}" class="btn btn-secondary">
+                <i class="fas fa-file-export me-2"></i>Exporter
+            </a>
+            <div class="btn-group">
+                <a href="{% url 'inventory:stock_entry' %}" class="btn btn-success">
+                    <i class="fas fa-plus me-2"></i>Nouvelle Entrée
+                </a>
+                <a href="{% url 'inventory:stock_exit' %}" class="btn btn-warning">
+                    <i class="fas fa-minus me-2"></i>Nouvelle Sortie
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label">Produit</label>
+                    <select name="product" class="form-select">
+                        <option value="">Tous les produits</option>
+                        {% for product in products %}
+                            <option value="{{ product.id }}" 
+                                {% if request.GET.product == product.id|stringformat:"s" %}selected{% endif %}>
+                                {{ product.name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Type</label>
+                    <select name="movement_type" class="form-select">
+                        <option value="">Tous les types</option>
+                        <option value="IN" {% if request.GET.movement_type == 'IN' %}selected{% endif %}>Entrées</option>
+                        <option value="OUT" {% if request.GET.movement_type == 'OUT' %}selected{% endif %}>Sorties</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Date début</label>
+                    <input type="date" name="start_date" class="form-control" 
+                           value="{{ request.GET.start_date }}">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Date fin</label>
+                    <input type="date" name="end_date" class="form-control" 
+                           value="{{ request.GET.end_date }}">
+                </div>
+                <div class="col-md-3 d-flex align-items-end">
+                    <div class="d-grid w-100">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-filter me-2"></i>Filtrer
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <h6 class="card-title">Total Mouvements</h6>
+                    <h2 class="mb-0">{{ total_movements }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <h6 class="card-title">Total Entrées</h6>
+                    <h2 class="mb-0">{{ total_entries }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <h6 class="card-title">Total Sorties</h6>
+                    <h2 class="mb-0">{{ total_exits }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <h6 class="card-title">Valeur des Mouvements</h6>
+                    <h2 class="mb-0">{{ total_value|floatformat:2 }} €</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Movements Table -->
+    <div class="card">
+        <div class="card-body">
+            {% if movements %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Produit</th>
+                                <th>Type</th>
+                                <th>Quantité</th>
+                                <th>Prix unitaire</th>
+                                <th>Total</th>
+                                <th>Notes</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for movement in movements %}
+                                <tr>
+                                    <td>{{ movement.date|date:"d/m/Y H:i" }}</td>
+                                    <td>
+                                        <a href="{% url 'inventory:product_edit' movement.product.id %}" 
+                                           class="text-decoration-none">
+                                            {{ movement.product.name }}
+                                        </a>
+                                    </td>
+                                    <td>
+                                        {% if movement.movement_type == 'IN' %}
+                                            <span class="badge bg-success">Entrée</span>
+                                        {% else %}
+                                            <span class="badge bg-warning">Sortie</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ movement.quantity }}</td>
+                                    <td>{{ movement.unit_price }} €</td>
+                                    <td>{{ movement.total_value|floatformat:2 }} €</td>
+                                    <td>
+                                        {% if movement.notes %}
+                                            <span class="text-muted">{{ movement.notes|truncatechars:30 }}</span>
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                {% if is_paginated %}
+                    <nav aria-label="Page navigation" class="mt-4">
+                        <ul class="pagination justify-content-center">
+                            {% if page_obj.has_previous %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page=1{{ query_params }}">&laquo; Premier</a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}{{ query_params }}">
+                                        Précédent
+                                    </a>
+                                </li>
+                            {% endif %}
+
+                            {% for num in page_obj.paginator.page_range %}
+                                {% if page_obj.number == num %}
+                                    <li class="page-item active">
+                                        <span class="page-link">{{ num }}</span>
+                                    </li>
+                                {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ num }}{{ query_params }}">{{ num }}</a>
+                                    </li>
+                                {% endif %}
+                            {% endfor %}
+
+                            {% if page_obj.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.next_page_number }}{{ query_params }}">
+                                        Suivant
+                                    </a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{{ query_params }}">
+                                        Dernier &raquo;
+                                    </a>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                {% endif %}
+            {% else %}
+                <div class="text-center py-4">
+                    <p class="text-muted mb-0">Aucun mouvement trouvé.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Auto-submit form when date inputs change
+document.querySelectorAll('input[type="date"], select').forEach(input => {
+    input.addEventListener('change', () => {
+        input.form.submit();
+    });
+});
+</script>
+{% endblock %}
