@@ -1,5 +1,6 @@
 {% extends 'inventory/base.html' %}
 {% load crispy_forms_tags %}
+{% load currency_filters %}
 
 {% block title %}
     {% if movement_type == 'IN' %}Entrée{% else %}Sortie{% endif %} de Stock - StockManager
@@ -27,6 +28,36 @@
             <form method="post" class="needs-validation" novalidate>
                 {% csrf_token %}
                 
+                <div class="row mb-4">
+                    <!-- Barcode Scanner -->
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="card-title mb-0">Scanner de Code-barres</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-8">
+                                        <div class="input-group mb-3">
+                                            <input type="text" id="barcodeInput" class="form-control" placeholder="Scanner ou saisir le code-barres">
+                                            <button class="btn btn-primary" type="button" id="startScanner">
+                                                <i class="fas fa-camera me-2"></i>Scanner
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div id="interactive" class="viewport" style="display: none;">
+                                    <video autoplay="true" preload="auto" style="width: 100%;"></video>
+                                    <canvas class="drawingBuffer"></canvas>
+                                    <button class="btn btn-secondary mt-2" type="button" id="stopScanner">
+                                        <i class="fas fa-times me-2"></i>Arrêter le Scanner
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="row">
                     <!-- Movement Details -->
                     <div class="col-md-8">
@@ -51,7 +82,7 @@
                                         <label class="form-label">Montant total</label>
                                         <div class="input-group">
                                             <input type="text" class="form-control" id="total_amount" readonly>
-                                            <span class="input-group-text">€</span>
+                                            <span class="input-group-text">GNF</span>
                                         </div>
                                     </div>
                                 </div>
@@ -70,9 +101,39 @@
                             </div>
                             <div class="card-body">
                                 <div id="product-info">
-                                    <p class="text-muted text-center mb-0">
+                                    <p class="text-muted text-center mb-0" id="product-info-placeholder">
                                         Sélectionnez un produit pour voir ses informations
                                     </p>
+                                    <div id="product-info-content" style="display: none;">
+                                        <div class="mb-3">
+                                            <small class="text-muted">Catégorie:</small>
+                                            <div id="product-category"></div>
+                                        </div>
+                                        <div class="mb-3">
+                                            <small class="text-muted">Prix unitaire:</small>
+                                            <div id="product-price"></div>
+                                        </div>
+                                        <div class="mb-3">
+                                            <small class="text-muted">Quantité en stock:</small>
+                                            <div id="product-quantity"></div>
+                                        </div>
+                                        <div class="mb-3">
+                                            <small class="text-muted">Stock minimum:</small>
+                                            <div id="product-min-stock"></div>
+                                        </div>
+                                        <div class="mb-3">
+                                            <small class="text-muted">Fournisseur:</small>
+                                            <div id="product-supplier"></div>
+                                        </div>
+                                        <div class="mb-3">
+                                            <small class="text-muted">Code-barres:</small>
+                                            <div id="product-barcode"></div>
+                                        </div>
+                                        <div class="mb-3">
+                                            <small class="text-muted">Statut:</small>
+                                            <div id="product-status"></div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -102,6 +163,135 @@
 
 {% block extra_js %}
 <script>
+// Initialize Quagga barcode scanner
+let scanner = null;
+
+function initScanner() {
+    Quagga.init({
+        inputStream: {
+            name: "Live",
+            type: "LiveStream",
+            target: document.querySelector("#interactive video"),
+            constraints: {
+                facingMode: "environment"
+            },
+        },
+        decoder: {
+            readers: ["ean_reader", "ean_8_reader", "code_128_reader", "code_39_reader", "upc_reader"]
+        }
+    }, function(err) {
+        if (err) {
+            console.error(err);
+            alert("Erreur d'initialisation de la caméra. Veuillez vérifier que vous avez autorisé l'accès à la caméra.");
+            return;
+        }
+        Quagga.start();
+    });
+
+    Quagga.onDetected(function(result) {
+        let code = result.codeResult.code;
+        handleBarcode(code);
+        stopScanner();
+    });
+}
+
+function stopScanner() {
+    if (Quagga) {
+        Quagga.stop();
+    }
+    document.getElementById('interactive').style.display = 'none';
+}
+
+function handleBarcode(barcode) {
+    document.getElementById('barcodeInput').value = barcode;
+    
+    // Lookup product by barcode
+    fetch(`/inventory/api/lookup-barcode/?barcode=${barcode}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                alert("Produit non trouvé");
+                return;
+            }
+            
+            // Set product in select
+            const productSelect = document.getElementById('id_product');
+            productSelect.value = data.id;
+            
+            // Trigger change event to update product info
+            const event = new Event('change');
+            productSelect.dispatchEvent(event);
+            
+            // Set unit price
+            document.getElementById('id_unit_price').value = data.price;
+            calculateTotal();
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert("Erreur lors de la recherche du produit");
+        });
+}
+
+// Event listeners for scanner controls
+document.getElementById('startScanner').addEventListener('click', function() {
+    document.getElementById('interactive').style.display = 'block';
+    initScanner();
+});
+
+document.getElementById('stopScanner').addEventListener('click', stopScanner);
+
+// Handle manual barcode input
+document.getElementById('barcodeInput').addEventListener('change', function(e) {
+    handleBarcode(e.target.value);
+});
+
+// Update product information when product is selected
+document.getElementById('id_product').addEventListener('change', function(e) {
+    const productId = e.target.value;
+    if (productId) {
+        fetch(`/inventory/api/products/${productId}/`)
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('product-info-placeholder').style.display = 'none';
+                document.getElementById('product-info-content').style.display = 'block';
+                
+                document.getElementById('product-category').textContent = data.category;
+                document.getElementById('product-price').textContent = `${parseInt(data.price).toLocaleString()} GNF`;
+                document.getElementById('product-quantity').textContent = data.quantity;
+                document.getElementById('product-min-stock').textContent = data.minimum_stock;
+                document.getElementById('product-supplier').textContent = data.supplier || 'Non spécifié';
+                document.getElementById('product-barcode').textContent = data.barcode || 'Non spécifié';
+                
+                const stockStatus = data.is_low_stock ? 
+                    '<span class="badge bg-danger">Stock Bas</span>' : 
+                    '<span class="badge bg-success">Stock OK</span>';
+                document.getElementById('product-status').innerHTML = stockStatus;
+                
+                // Pre-fill unit price
+                document.getElementById('id_unit_price').value = data.price;
+                calculateTotal();
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert("Erreur lors de la récupération des informations du produit");
+            });
+    } else {
+        document.getElementById('product-info-placeholder').style.display = 'block';
+        document.getElementById('product-info-content').style.display = 'none';
+    }
+});
+
+// Calculate total amount
+function calculateTotal() {
+    const quantity = document.getElementById('id_quantity').value || 0;
+    const unitPrice = document.getElementById('id_unit_price').value || 0;
+    const total = parseFloat(quantity) * parseFloat(unitPrice);
+    document.getElementById('total_amount').value = total.toLocaleString();
+}
+
+document.getElementById('id_quantity').addEventListener('input', calculateTotal);
+document.getElementById('id_unit_price').addEventListener('input', calculateTotal);
+
 // Form validation
 (function () {
     'use strict'
@@ -116,66 +306,5 @@
         }, false)
     })
 })()
-
-// Calculate total amount
-function calculateTotal() {
-    const quantity = document.getElementById('id_quantity').value || 0;
-    const unitPrice = document.getElementById('id_unit_price').value || 0;
-    const total = parseFloat(quantity) * parseFloat(unitPrice);
-    document.getElementById('total_amount').value = total.toFixed(2);
-}
-
-document.getElementById('id_quantity').addEventListener('input', calculateTotal);
-document.getElementById('id_unit_price').addEventListener('input', calculateTotal);
-
-// Update product information
-document.getElementById('id_product').addEventListener('change', function(e) {
-    const productId = e.target.value;
-    if (productId) {
-        fetch(`/api/products/${productId}/`)
-            .then(response => response.json())
-            .then(data => {
-                const productInfo = document.getElementById('product-info');
-                const stockStatus = data.quantity <= data.minimum_stock ? 
-                    '<span class="badge bg-danger">Stock Bas</span>' : 
-                    '<span class="badge bg-success">Stock OK</span>';
-                
-                productInfo.innerHTML = `
-                    <h6 class="mb-3">${data.name}</h6>
-                    <div class="mb-2">
-                        <small class="text-muted">Catégorie:</small>
-                        <br>${data.category}
-                    </div>
-                    <div class="mb-2">
-                        <small class="text-muted">Prix unitaire:</small>
-                        <br>${data.price} €
-                    </div>
-                    <div class="mb-2">
-                        <small class="text-muted">Quantité en stock:</small>
-                        <br>${data.quantity}
-                    </div>
-                    <div class="mb-2">
-                        <small class="text-muted">Stock minimum:</small>
-                        <br>${data.minimum_stock}
-                    </div>
-                    <div class="mb-2">
-                        <small class="text-muted">Statut:</small>
-                        <br>${stockStatus}
-                    </div>
-                `;
-
-                // Pre-fill unit price
-                document.getElementById('id_unit_price').value = data.price;
-                calculateTotal();
-            })
-            .catch(error => console.error('Error:', error));
-    } else {
-        document.getElementById('product-info').innerHTML = `
-            <p class="text-muted text-center mb-0">
-                Sélectionnez un produit pour voir ses informations
-            </p>
-        `;
-    }
-});
 </script>
 {% endblock %}

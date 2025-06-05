@@ -1,4 +1,5 @@
 {% extends 'inventory/base.html' %}
+{% load currency_filters %}
 
 {% block title %}Historique des Mouvements - StockManager{% endblock %}
 
@@ -97,7 +98,7 @@
             <div class="card bg-info text-white">
                 <div class="card-body">
                     <h6 class="card-title">Valeur des Mouvements</h6>
-                    <h2 class="mb-0">{{ total_value|floatformat:2 }} €</h2>
+                    <h2 class="mb-0">{{ total_value|gnf }}</h2>
                 </div>
             </div>
         </div>
@@ -138,8 +139,8 @@
                                         {% endif %}
                                     </td>
                                     <td>{{ movement.quantity }}</td>
-                                    <td>{{ movement.unit_price }} €</td>
-                                    <td>{{ movement.total_value|floatformat:2 }} €</td>
+                                    <td>{{ movement.unit_price|gnf }}</td>
+                                    <td>{{ movement.total_value|gnf }}</td>
                                     <td>
                                         {% if movement.notes %}
                                             <span class="text-muted">{{ movement.notes|truncatechars:30 }}</span>
