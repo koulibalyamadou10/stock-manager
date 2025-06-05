@@ -27,6 +27,13 @@ DEBUG = True
 
 ALLOWED_HOSTS = ['*']  # For development only
 
+# CSRF Settings
+CSRF_TRUSTED_ORIGINS = [
+    'https://*.csb.app',
+    'http://localhost:8000',
+    'https://stock-manager.store'
+]
+
 
 # Application definition
 
