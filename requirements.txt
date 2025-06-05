@@ -4,4 +4,4 @@ xlsxwriter
 django-crispy-forms
 django-chartjs
 crispy-bootstrap4
-guicorn
+gunicorn
