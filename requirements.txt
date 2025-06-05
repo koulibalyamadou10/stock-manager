@@ -6,3 +6,4 @@ django-chartjs
 crispy-bootstrap4
 gunicorn
 daphne
+twisted[http2,tls]
