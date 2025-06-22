@@ -3,261 +3,408 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}StockManager{% endblock %}</title>
+    <title>{% block title %}StockManager Pro{% endblock %}</title>
     
-    <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
     <!-- Font Awesome -->
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Alpine.js -->
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <!-- QuaggaJS for barcode scanning -->
     <script src="https://cdn.jsdelivr.net/npm/quagga@0.12.1/dist/quagga.min.js"></script>
     
-    <style>
-        :root {
-            --sidebar-width: 250px;
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#eff6ff',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                        }
+                    }
+                }
+            }
         }
+    </script>
+    
+    <style>
+        [x-cloak] { display: none !important; }
         
-        /* Sidebar styles */
-        .sidebar {
-            width: var(--sidebar-width);
-            position: fixed;
-            top: 0;
-            left: 0;
-            height: 100vh;
-            background-color: #212529;
-            padding-top: 1rem;
-            z-index: 1000;
+        .sidebar-transition {
             transition: transform 0.3s ease-in-out;
         }
         
-        .main-content {
-            margin-left: var(--sidebar-width);
-            padding: 2rem;
-            transition: margin-left 0.3s ease-in-out;
+        .fade-in {
+            animation: fadeIn 0.3s ease-in-out;
         }
         
-        .sidebar-link {
-            color: #fff;
-            text-decoration: none;
-            padding: 0.5rem 1rem;
-            display: block;
-            transition: background-color 0.3s;
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
         }
         
-        .sidebar-link:hover {
-            background-color: #343a40;
-            color: #fff;
+        .pulse-ring {
+            animation: pulse-ring 1.25s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
         }
         
-        .sidebar-link.active {
-            background-color: #0d6efd;
+        @keyframes pulse-ring {
+            0% { transform: scale(.33); }
+            80%, 100% { opacity: 0; }
         }
         
-        /* Mobile styles */
-        .mobile-nav {
-            display: none;
-            position: fixed;
+        .scanner-overlay {
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .scanner-overlay::before {
+            content: '';
+            position: absolute;
             top: 0;
             left: 0;
             right: 0;
-            background-color: #212529;
-            padding: 1rem;
-            z-index: 1001;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #ef4444, transparent);
+            animation: scan 2s linear infinite;
+            z-index: 10;
         }
         
-        .mobile-nav .navbar-brand {
-            color: white;
-            font-size: 1.25rem;
-        }
-        
-        #sidebarToggle {
-            display: none;
-        }
-        
-        /* Responsive adjustments */
-        @media (max-width: 768px) {
-            .sidebar {
-                transform: translateX(-100%);
-            }
-            
-            .sidebar.show {
-                transform: translateX(0);
-            }
-            
-            .main-content {
-                margin-left: 0;
-                padding-top: 4rem;
-            }
-            
-            .mobile-nav {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-            }
-            
-            #sidebarToggle {
-                display: block;
-                background: none;
-                border: none;
-                color: white;
-                font-size: 1.5rem;
-            }
-            
-            /* Adjust cards for mobile */
-            .card {
-                margin-bottom: 1rem;
-            }
-            
-            /* Make tables responsive */
-            .table-responsive {
-                margin-bottom: 1rem;
-            }
-            
-            /* Adjust form layouts */
-            .form-group {
-                margin-bottom: 1rem;
-            }
-            
-            /* Adjust chart containers */
-            .chart-container {
-                height: 250px !important;
-            }
-        }
-        
-        /* Other styles */
-        .stats-card {
-            transition: transform 0.3s;
-        }
-        
-        .stats-card:hover {
-            transform: translateY(-5px);
-        }
-        
-        .alert-stock {
-            background-color: #fff3cd;
-            border-left: 4px solid #ffc107;
-        }
-        
-        .chart-container {
-            position: relative;
-            margin: auto;
-            height: 300px;
-        }
-        
-        /* Barcode scanner styles */
-        #interactive.viewport {
-            position: relative;
-            width: 100%;
-            height: 300px;
-        }
-        
-        #interactive.viewport > canvas, #interactive.viewport > video {
-            max-width: 100%;
-            width: 100%;
-        }
-        
-        canvas.drawing, canvas.drawingBuffer {
-            position: absolute;
-            left: 0;
-            top: 0;
+        @keyframes scan {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(300px); }
         }
     </style>
 </head>
-<body>
-    <!-- Mobile Navigation -->
-    {% if user.is_authenticated and request.resolver_match.url_name != 'login' %}
-    <nav class="mobile-nav">
-        <button id="sidebarToggle">
-            <i class="fas fa-bars"></i>
-        </button>
-        <span class="navbar-brand">StockManager</span>
-        <div class="dropdown">
-            <button class="btn btn-link text-white" type="button" data-bs-toggle="dropdown">
-                <i class="fas fa-ellipsis-v"></i>
-            </button>
-            <ul class="dropdown-menu dropdown-menu-end">
-                <li><a class="dropdown-item" href="#" onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
-                    <i class="fas fa-sign-out-alt me-2"></i>Déconnexion
-                </a></li>
-            </ul>
-        </div>
-    </nav>
-    
-    <!-- Logout Form -->
-    <form id="logout-form" action="{% url 'logout' %}" method="POST" style="display: none;">
-        {% csrf_token %}
-    </form>
-    {% endif %}
+<body class="bg-gray-50" x-data="{ sidebarOpen: false, notifications: [] }">
+    <!-- Mobile sidebar backdrop -->
+    <div x-show="sidebarOpen" 
+         x-transition:enter="transition-opacity ease-linear duration-300"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="transition-opacity ease-linear duration-300"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0"
+         class="fixed inset-0 z-40 lg:hidden"
+         @click="sidebarOpen = false">
+        <div class="absolute inset-0 bg-gray-600 opacity-75"></div>
+    </div>
 
     <!-- Sidebar -->
     {% if user.is_authenticated and request.resolver_match.url_name != 'login' %}
-    <div class="sidebar">
-        <div class="px-3 mb-4 d-none d-md-block">
-            <h4 class="text-white">StockManager</h4>
+    <div class="fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform sidebar-transition lg:translate-x-0 lg:static lg:inset-0"
+         :class="{ 'translate-x-0': sidebarOpen, '-translate-x-full': !sidebarOpen }">
+        
+        <!-- Logo -->
+        <div class="flex items-center justify-center h-16 px-4 bg-gradient-to-r from-blue-600 to-blue-700">
+            <h1 class="text-xl font-bold text-white">
+                <i class="fas fa-boxes mr-2"></i>StockManager Pro
+            </h1>
         </div>
-        <nav>
-            <a href="{% url 'inventory:dashboard' %}" class="sidebar-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
-                <i class="fas fa-tachometer-alt me-2"></i> Tableau de bord
-            </a>
-            <a href="{% url 'inventory:product_list' %}" class="sidebar-link {% if 'product' in request.resolver_match.url_name %}active{% endif %}">
-                <i class="fas fa-box me-2"></i> Produits
-            </a>
-            <a href="{% url 'inventory:category_list' %}" class="sidebar-link {% if 'category' in request.resolver_match.url_name %}active{% endif %}">
-                <i class="fas fa-tags me-2"></i> Catégories
-            </a>
-            <a href="{% url 'inventory:supplier_list' %}" class="sidebar-link {% if 'supplier' in request.resolver_match.url_name %}active{% endif %}">
-                <i class="fas fa-truck me-2"></i> Fournisseurs
-            </a>
-            <a href="{% url 'inventory:stock_history' %}" class="sidebar-link {% if 'stock' in request.resolver_match.url_name %}active{% endif %}">
-                <i class="fas fa-history me-2"></i> Mouvements
-            </a>
-            <a href="{% url 'inventory:statistics' %}" class="sidebar-link {% if request.resolver_match.url_name == 'statistics' %}active{% endif %}">
-                <i class="fas fa-chart-bar me-2"></i> Statistiques
-            </a>
+
+        <!-- Navigation -->
+        <nav class="mt-8">
+            <div class="px-4 space-y-2">
+                <a href="{% url 'inventory:dashboard' %}" 
+                   class="flex items-center px-4 py-3 text-gray-700 rounded-lg hover:bg-blue-50 hover:text-blue-700 transition-colors duration-200 {% if request.resolver_match.url_name == 'dashboard' %}bg-blue-50 text-blue-700 border-r-2 border-blue-700{% endif %}">
+                    <i class="fas fa-tachometer-alt w-5 h-5 mr-3"></i>
+                    Tableau de bord
+                </a>
+                
+                <a href="{% url 'inventory:product_list' %}" 
+                   class="flex items-center px-4 py-3 text-gray-700 rounded-lg hover:bg-blue-50 hover:text-blue-700 transition-colors duration-200 {% if 'product' in request.resolver_match.url_name %}bg-blue-50 text-blue-700 border-r-2 border-blue-700{% endif %}">
+                    <i class="fas fa-box w-5 h-5 mr-3"></i>
+                    Produits
+                </a>
+                
+                <a href="{% url 'inventory:category_list' %}" 
+                   class="flex items-center px-4 py-3 text-gray-700 rounded-lg hover:bg-blue-50 hover:text-blue-700 transition-colors duration-200 {% if 'category' in request.resolver_match.url_name %}bg-blue-50 text-blue-700 border-r-2 border-blue-700{% endif %}">
+                    <i class="fas fa-tags w-5 h-5 mr-3"></i>
+                    Catégories
+                </a>
+                
+                <a href="{% url 'inventory:supplier_list' %}" 
+                   class="flex items-center px-4 py-3 text-gray-700 rounded-lg hover:bg-blue-50 hover:text-blue-700 transition-colors duration-200 {% if 'supplier' in request.resolver_match.url_name %}bg-blue-50 text-blue-700 border-r-2 border-blue-700{% endif %}">
+                    <i class="fas fa-truck w-5 h-5 mr-3"></i>
+                    Fournisseurs
+                </a>
+                
+                <a href="{% url 'inventory:stock_history' %}" 
+                   class="flex items-center px-4 py-3 text-gray-700 rounded-lg hover:bg-blue-50 hover:text-blue-700 transition-colors duration-200 {% if 'stock' in request.resolver_match.url_name %}bg-blue-50 text-blue-700 border-r-2 border-blue-700{% endif %}">
+                    <i class="fas fa-history w-5 h-5 mr-3"></i>
+                    Mouvements
+                </a>
+                
+                <a href="{% url 'inventory:alerts' %}" 
+                   class="flex items-center px-4 py-3 text-gray-700 rounded-lg hover:bg-blue-50 hover:text-blue-700 transition-colors duration-200 {% if request.resolver_match.url_name == 'alerts' %}bg-blue-50 text-blue-700 border-r-2 border-blue-700{% endif %}">
+                    <i class="fas fa-exclamation-triangle w-5 h-5 mr-3"></i>
+                    Alertes
+                    <span class="ml-auto bg-red-500 text-white text-xs px-2 py-1 rounded-full" id="alert-count">0</span>
+                </a>
+                
+                <a href="{% url 'inventory:statistics' %}" 
+                   class="flex items-center px-4 py-3 text-gray-700 rounded-lg hover:bg-blue-50 hover:text-blue-700 transition-colors duration-200 {% if request.resolver_match.url_name == 'statistics' %}bg-blue-50 text-blue-700 border-r-2 border-blue-700{% endif %}">
+                    <i class="fas fa-chart-bar w-5 h-5 mr-3"></i>
+                    Statistiques
+                </a>
+            </div>
         </nav>
+
+        <!-- User menu -->
+        <div class="absolute bottom-0 w-full p-4 border-t border-gray-200">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    <div class="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
+                        <i class="fas fa-user text-white text-sm"></i>
+                    </div>
+                </div>
+                <div class="ml-3">
+                    <p class="text-sm font-medium text-gray-700">{{ user.get_full_name|default:user.username }}</p>
+                    <form method="post" action="{% url 'logout' %}" class="inline">
+                        {% csrf_token %}
+                        <button type="submit" class="text-xs text-gray-500 hover:text-gray-700">
+                            Déconnexion
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
     </div>
     {% endif %}
 
-    <!-- Main Content -->
-    <div class="main-content {% if not user.is_authenticated or request.resolver_match.url_name == 'login' %}w-100 m-0{% endif %}">
-        {% if messages %}
-            {% for message in messages %}
-                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-                    {{ message }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    <!-- Main content -->
+    <div class="{% if user.is_authenticated and request.resolver_match.url_name != 'login' %}lg:ml-64{% endif %}">
+        <!-- Top bar -->
+        {% if user.is_authenticated and request.resolver_match.url_name != 'login' %}
+        <div class="bg-white shadow-sm border-b border-gray-200">
+            <div class="px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between h-16">
+                    <div class="flex items-center">
+                        <button @click="sidebarOpen = !sidebarOpen" 
+                                class="lg:hidden p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100">
+                            <i class="fas fa-bars h-6 w-6"></i>
+                        </button>
+                        
+                        <!-- Search bar -->
+                        <div class="hidden md:block ml-4">
+                            <div class="relative">
+                                <input type="text" 
+                                       placeholder="Rechercher un produit..." 
+                                       class="w-64 pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                       x-data="{ search: '' }"
+                                       x-model="search"
+                                       @input.debounce.300ms="searchProducts(search)">
+                                <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center space-x-4">
+                        <!-- Notifications -->
+                        <div class="relative" x-data="{ open: false }">
+                            <button @click="open = !open" 
+                                    class="p-2 text-gray-400 hover:text-gray-500 relative">
+                                <i class="fas fa-bell h-6 w-6"></i>
+                                <span class="absolute -top-1 -right-1 h-4 w-4 bg-red-500 rounded-full text-xs text-white flex items-center justify-center" 
+                                      x-show="notifications.length > 0" 
+                                      x-text="notifications.length"></span>
+                            </button>
+                            
+                            <div x-show="open" 
+                                 @click.away="open = false"
+                                 x-transition:enter="transition ease-out duration-100"
+                                 x-transition:enter-start="transform opacity-0 scale-95"
+                                 x-transition:enter-end="transform opacity-100 scale-100"
+                                 x-transition:leave="transition ease-in duration-75"
+                                 x-transition:leave-start="transform opacity-100 scale-100"
+                                 x-transition:leave-end="transform opacity-0 scale-95"
+                                 class="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
+                                <div class="p-4">
+                                    <h3 class="text-lg font-semibold text-gray-900">Notifications</h3>
+                                    <div class="mt-2 space-y-2" x-show="notifications.length > 0">
+                                        <template x-for="notification in notifications" :key="notification.id">
+                                            <div class="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                                                <p class="text-sm text-yellow-800" x-text="notification.message"></p>
+                                            </div>
+                                        </template>
+                                    </div>
+                                    <p x-show="notifications.length === 0" class="text-sm text-gray-500 mt-2">
+                                        Aucune notification
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Quick actions -->
+                        <div class="flex space-x-2">
+                            <a href="{% url 'inventory:stock_entry' %}" 
+                               class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-green-600 hover:bg-green-700 transition-colors duration-200">
+                                <i class="fas fa-plus mr-1"></i>
+                                Entrée
+                            </a>
+                            <a href="{% url 'inventory:stock_exit' %}" 
+                               class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-red-600 hover:bg-red-700 transition-colors duration-200">
+                                <i class="fas fa-minus mr-1"></i>
+                                Sortie
+                            </a>
+                        </div>
+                    </div>
                 </div>
-            {% endfor %}
+            </div>
+        </div>
         {% endif %}
 
-        {% block content %}{% endblock %}
+        <!-- Messages -->
+        {% if messages %}
+            <div class="fixed top-20 right-4 z-50 space-y-2" x-data="{ show: true }" x-show="show" x-cloak>
+                {% for message in messages %}
+                    <div class="max-w-sm bg-white border border-gray-200 rounded-lg shadow-lg fade-in"
+                         x-data="{ visible: true }" 
+                         x-show="visible"
+                         x-init="setTimeout(() => visible = false, 5000)">
+                        <div class="p-4">
+                            <div class="flex items-start">
+                                <div class="flex-shrink-0">
+                                    {% if message.tags == 'success' %}
+                                        <i class="fas fa-check-circle text-green-500"></i>
+                                    {% elif message.tags == 'error' %}
+                                        <i class="fas fa-exclamation-circle text-red-500"></i>
+                                    {% elif message.tags == 'warning' %}
+                                        <i class="fas fa-exclamation-triangle text-yellow-500"></i>
+                                    {% else %}
+                                        <i class="fas fa-info-circle text-blue-500"></i>
+                                    {% endif %}
+                                </div>
+                                <div class="ml-3 w-0 flex-1">
+                                    <p class="text-sm font-medium text-gray-900">{{ message }}</p>
+                                </div>
+                                <div class="ml-4 flex-shrink-0 flex">
+                                    <button @click="visible = false" 
+                                            class="text-gray-400 hover:text-gray-600">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <!-- Page content -->
+        <main class="p-4 sm:p-6 lg:p-8">
+            {% block content %}{% endblock %}
+        </main>
     </div>
 
-    <!-- Bootstrap Bundle with Popper -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    
-    <!-- Mobile Navigation Script -->
+    <!-- Global JavaScript -->
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const sidebarToggle = document.getElementById('sidebarToggle');
-            const sidebar = document.querySelector('.sidebar');
+        // Global functions
+        function searchProducts(query) {
+            if (query.length < 2) return;
             
-            if (sidebarToggle && sidebar) {
-                sidebarToggle.addEventListener('click', function() {
-                    sidebar.classList.toggle('show');
-                });
-                
-                // Close sidebar when clicking outside
-                document.addEventListener('click', function(event) {
-                    if (!sidebar.contains(event.target) && !sidebarToggle.contains(event.target)) {
-                        sidebar.classList.remove('show');
+            fetch(`/inventory/api/search-products/?q=${encodeURIComponent(query)}`)
+                .then(response => response.json())
+                .then(data => {
+                    // Handle search results
+                    console.log('Search results:', data);
+                })
+                .catch(error => console.error('Search error:', error));
+        }
+
+        // Load alerts count
+        function loadAlertsCount() {
+            fetch('/inventory/api/alerts-count/')
+                .then(response => response.json())
+                .then(data => {
+                    const alertCount = document.getElementById('alert-count');
+                    if (alertCount) {
+                        alertCount.textContent = data.count;
+                        alertCount.style.display = data.count > 0 ? 'inline' : 'none';
                     }
+                })
+                .catch(error => console.error('Error loading alerts:', error));
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            loadAlertsCount();
+            
+            // Refresh alerts count every 30 seconds
+            setInterval(loadAlertsCount, 30000);
+        });
+
+        // Real-time notifications
+        function addNotification(message, type = 'info') {
+            const notification = {
+                id: Date.now(),
+                message: message,
+                type: type,
+                timestamp: new Date()
+            };
+            
+            // Add to Alpine.js data
+            if (window.Alpine) {
+                Alpine.store('notifications', Alpine.store('notifications') || []);
+                Alpine.store('notifications').push(notification);
+            }
+        }
+
+        // Barcode scanner utility
+        function initBarcodeScanner(targetElement, onDetected) {
+            if (typeof Quagga !== 'undefined') {
+                Quagga.init({
+                    inputStream: {
+                        name: "Live",
+                        type: "LiveStream",
+                        target: targetElement,
+                        constraints: {
+                            width: 640,
+                            height: 480,
+                            facingMode: "environment"
+                        },
+                    },
+                    decoder: {
+                        readers: [
+                            "code_128_reader",
+                            "ean_reader",
+                            "ean_8_reader",
+                            "code_39_reader",
+                            "code_39_vin_reader",
+                            "codabar_reader",
+                            "upc_reader",
+                            "upc_e_reader",
+                            "i2of5_reader"
+                        ]
+                    }
+                }, function(err) {
+                    if (err) {
+                        console.error('Erreur initialisation scanner:', err);
+                        return;
+                    }
+                    Quagga.start();
+                });
+
+                Quagga.onDetected(function(result) {
+                    const code = result.codeResult.code;
+                    onDetected(code);
+                    Quagga.stop();
                 });
             }
-        });
+        }
+
+        function stopBarcodeScanner() {
+            if (typeof Quagga !== 'undefined') {
+                Quagga.stop();
+            }
+        }
     </script>
-    
+
     {% block extra_js %}{% endblock %}
 </body>
 </html>

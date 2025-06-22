@@ -30,13 +30,21 @@ urlpatterns = [
     path('suppliers/<int:pk>/edit/', views.supplier_edit, name='supplier_edit'),
     path('suppliers/<int:pk>/delete/', views.supplier_delete, name='supplier_delete'),
     
+    # Alerts
+    path('alerts/', views.alerts_view, name='alerts'),
+    
     # Statistics
     path('statistics/', views.statistics, name='statistics'),
     
-    # API endpoints for Chart.js
+    # API endpoints
+    path('api/alerts/', views.api_alerts, name='api_alerts'),
+    path('api/alerts/<int:alert_id>/resolve/', views.api_resolve_alert, name='api_resolve_alert'),
+    path('api/alerts-count/', views.api_alerts_count, name='api_alerts_count'),
+    path('api/recent-movements/', views.api_recent_movements, name='api_recent_movements'),
+    path('api/search-products/', views.api_search_products, name='api_search_products'),
+    path('api/search-by-barcode/', views.api_search_by_barcode, name='api_search_by_barcode'),
     path('api/stock-movement-chart/', views.stock_movement_chart, name='stock_movement_chart'),
     path('api/product-category-chart/', views.product_category_chart, name='product_category_chart'),
-    path('api/low-stock-products/', views.low_stock_products, name='low_stock_products'),
     
     # Export functionality
     path('export/products/', views.export_products, name='export_products'),

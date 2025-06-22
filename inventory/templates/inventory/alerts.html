@@ -1,0 +1,287 @@
+{% extends 'inventory/base.html' %}
+
+{% block title %}Alertes de Stock - StockManager Pro{% endblock %}
+
+{% block content %}
+<div x-data="alertsData()" x-init="init()">
+    <!-- Page Header -->
+    <div class="mb-8">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-900">Alertes de Stock</h1>
+                <p class="mt-2 text-gray-600">Gérez les alertes et notifications de votre inventaire</p>
+            </div>
+            <div class="mt-4 sm:mt-0 flex space-x-3">
+                <button @click="refreshAlerts()" 
+                        class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors duration-200">
+                    <i class="fas fa-sync-alt mr-2" :class="{ 'animate-spin': loading }"></i>
+                    Actualiser
+                </button>
+                <button @click="resolveAllAlerts()" 
+                        :disabled="alerts.filter(a => a.status === 'ACTIVE').length === 0"
+                        class="inline-flex items-center px-4 py-2 border border-transparent rounded-lg text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200">
+                    <i class="fas fa-check-double mr-2"></i>
+                    Résoudre tout
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter Tabs -->
+    <div class="mb-6">
+        <div class="border-b border-gray-200">
+            <nav class="-mb-px flex space-x-8">
+                <button @click="currentFilter = 'ACTIVE'" 
+                        :class="currentFilter === 'ACTIVE' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                        class="whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm transition-colors duration-200">
+                    Actives
+                    <span class="ml-2 bg-red-100 text-red-800 text-xs px-2 py-1 rounded-full" 
+                          x-text="alerts.filter(a => a.status === 'ACTIVE').length"></span>
+                </button>
+                <button @click="currentFilter = 'RESOLVED'" 
+                        :class="currentFilter === 'RESOLVED' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                        class="whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm transition-colors duration-200">
+                    Résolues
+                    <span class="ml-2 bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full" 
+                          x-text="alerts.filter(a => a.status === 'RESOLVED').length"></span>
+                </button>
+                <button @click="currentFilter = 'ALL'" 
+                        :class="currentFilter === 'ALL' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                        class="whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm transition-colors duration-200">
+                    Toutes
+                    <span class="ml-2 bg-gray-100 text-gray-800 text-xs px-2 py-1 rounded-full" 
+                          x-text="alerts.length"></span>
+                </button>
+            </nav>
+        </div>
+    </div>
+
+    <!-- Alerts List -->
+    <div class="space-y-4">
+        <template x-for="alert in filteredAlerts" :key="alert.id">
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow duration-200">
+                <div class="p-6">
+                    <div class="flex items-start justify-between">
+                        <div class="flex items-start space-x-4">
+                            <!-- Alert Icon -->
+                            <div class="flex-shrink-0">
+                                <div class="w-12 h-12 rounded-lg flex items-center justify-center"
+                                     :class="{
+                                        'bg-red-100': alert.alert_type === 'OUT_OF_STOCK',
+                                        'bg-yellow-100': alert.alert_type === 'LOW_STOCK',
+                                        'bg-blue-100': alert.alert_type === 'OVERSTOCK',
+                                        'bg-orange-100': alert.alert_type === 'EXPIRY'
+                                     }">
+                                    <i :class="{
+                                        'fas fa-times-circle text-red-600': alert.alert_type === 'OUT_OF_STOCK',
+                                        'fas fa-exclamation-triangle text-yellow-600': alert.alert_type === 'LOW_STOCK',
+                                        'fas fa-info-circle text-blue-600': alert.alert_type === 'OVERSTOCK',
+                                        'fas fa-clock text-orange-600': alert.alert_type === 'EXPIRY'
+                                       }" class="text-xl"></i>
+                                </div>
+                            </div>
+
+                            <!-- Alert Content -->
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center space-x-2 mb-2">
+                                    <h3 class="text-lg font-semibold text-gray-900" x-text="alert.product_name"></h3>
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
+                                          :class="{
+                                            'bg-red-100 text-red-800': alert.alert_type === 'OUT_OF_STOCK',
+                                            'bg-yellow-100 text-yellow-800': alert.alert_type === 'LOW_STOCK',
+                                            'bg-blue-100 text-blue-800': alert.alert_type === 'OVERSTOCK',
+                                            'bg-orange-100 text-orange-800': alert.alert_type === 'EXPIRY'
+                                          }"
+                                          x-text="getAlertTypeLabel(alert.alert_type)"></span>
+                                </div>
+                                <p class="text-gray-600 mb-3" x-text="alert.message"></p>
+                                <div class="flex items-center text-sm text-gray-500 space-x-4">
+                                    <span>
+                                        <i class="fas fa-clock mr-1"></i>
+                                        <span x-text="formatDate(alert.created_at)"></span>
+                                    </span>
+                                    <span x-show="alert.status === 'RESOLVED'">
+                                        <i class="fas fa-check mr-1"></i>
+                                        Résolu le <span x-text="formatDate(alert.resolved_at)"></span>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Actions -->
+                        <div class="flex items-center space-x-2">
+                            <template x-if="alert.status === 'ACTIVE'">
+                                <div class="flex space-x-2">
+                                    <button @click="viewProduct(alert.product_id)" 
+                                            class="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors duration-200">
+                                        <i class="fas fa-eye mr-1"></i>
+                                        Voir
+                                    </button>
+                                    <button @click="resolveAlert(alert.id)" 
+                                            class="inline-flex items-center px-3 py-2 border border-transparent rounded-md text-sm font-medium text-white bg-green-600 hover:bg-green-700 transition-colors duration-200">
+                                        <i class="fas fa-check mr-1"></i>
+                                        Résoudre
+                                    </button>
+                                </div>
+                            </template>
+                            <template x-if="alert.status === 'RESOLVED'">
+                                <span class="inline-flex items-center px-3 py-2 rounded-md text-sm font-medium text-green-700 bg-green-100">
+                                    <i class="fas fa-check-circle mr-1"></i>
+                                    Résolu
+                                </span>
+                            </template>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Progress bar for low stock -->
+                <template x-if="alert.alert_type === 'LOW_STOCK' && alert.status === 'ACTIVE'">
+                    <div class="px-6 pb-4">
+                        <div class="bg-gray-200 rounded-full h-2">
+                            <div class="bg-red-500 h-2 rounded-full transition-all duration-300" 
+                                 :style="`width: ${Math.min((alert.current_stock / alert.minimum_stock) * 100, 100)}%`"></div>
+                        </div>
+                        <div class="flex justify-between text-xs text-gray-500 mt-1">
+                            <span>Stock actuel: <span x-text="alert.current_stock || 0"></span></span>
+                            <span>Minimum: <span x-text="alert.minimum_stock || 0"></span></span>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </template>
+
+        <!-- Empty State -->
+        <div x-show="filteredAlerts.length === 0" class="text-center py-12">
+            <div class="mx-auto w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                <i class="fas fa-bell-slash text-gray-400 text-3xl"></i>
+            </div>
+            <h3 class="text-lg font-medium text-gray-900 mb-2">Aucune alerte</h3>
+            <p class="text-gray-500" x-text="getEmptyStateMessage()"></p>
+        </div>
+    </div>
+
+    <!-- Loading State -->
+    <div x-show="loading" class="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg p-6 flex items-center space-x-3">
+            <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+            <span class="text-gray-900">Chargement...</span>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function alertsData() {
+    return {
+        alerts: [],
+        loading: false,
+        currentFilter: 'ACTIVE',
+
+        get filteredAlerts() {
+            if (this.currentFilter === 'ALL') {
+                return this.alerts;
+            }
+            return this.alerts.filter(alert => alert.status === this.currentFilter);
+        },
+
+        async init() {
+            await this.loadAlerts();
+            // Auto-refresh every 30 seconds
+            setInterval(() => this.loadAlerts(), 30000);
+        },
+
+        async loadAlerts() {
+            try {
+                const response = await fetch('/inventory/api/alerts/');
+                this.alerts = await response.json();
+            } catch (error) {
+                console.error('Error loading alerts:', error);
+            }
+        },
+
+        async refreshAlerts() {
+            this.loading = true;
+            try {
+                await this.loadAlerts();
+            } finally {
+                this.loading = false;
+            }
+        },
+
+        async resolveAlert(alertId) {
+            try {
+                const response = await fetch(`/inventory/api/alerts/${alertId}/resolve/`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    const alertIndex = this.alerts.findIndex(alert => alert.id === alertId);
+                    if (alertIndex !== -1) {
+                        this.alerts[alertIndex].status = 'RESOLVED';
+                        this.alerts[alertIndex].resolved_at = new Date().toISOString();
+                    }
+                }
+            } catch (error) {
+                console.error('Error resolving alert:', error);
+            }
+        },
+
+        async resolveAllAlerts() {
+            const activeAlerts = this.alerts.filter(alert => alert.status === 'ACTIVE');
+            
+            if (activeAlerts.length === 0) return;
+            
+            if (!confirm(`Êtes-vous sûr de vouloir résoudre toutes les ${activeAlerts.length} alertes actives ?`)) {
+                return;
+            }
+
+            this.loading = true;
+            try {
+                const promises = activeAlerts.map(alert => this.resolveAlert(alert.id));
+                await Promise.all(promises);
+            } finally {
+                this.loading = false;
+            }
+        },
+
+        viewProduct(productId) {
+            window.location.href = `/inventory/products/${productId}/edit/`;
+        },
+
+        getAlertTypeLabel(type) {
+            const labels = {
+                'LOW_STOCK': 'Stock Faible',
+                'OUT_OF_STOCK': 'Rupture',
+                'OVERSTOCK': 'Surstock',
+                'EXPIRY': 'Expiration'
+            };
+            return labels[type] || type;
+        },
+
+        getEmptyStateMessage() {
+            const messages = {
+                'ACTIVE': 'Aucune alerte active. Votre inventaire est sous contrôle !',
+                'RESOLVED': 'Aucune alerte résolue pour le moment.',
+                'ALL': 'Aucune alerte dans le système.'
+            };
+            return messages[this.currentFilter] || 'Aucune alerte trouvée.';
+        },
+
+        formatDate(dateString) {
+            return new Intl.DateTimeFormat('fr-FR', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            }).format(new Date(dateString));
+        }
+    }
+}
+</script>
+{% endblock %}
