@@ -14,6 +14,9 @@ urlpatterns = [
     # Inventory app URLs
     path('inventory/', include('inventory.urls')),
     
+    # Billing app URLs
+    path('billing/', include('billing.urls')),
+    
     # Redirect root URL to inventory dashboard
     path('', RedirectView.as_view(url='/inventory/', permanent=True)),
 ]

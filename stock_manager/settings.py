@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "inventory.apps.InventoryConfig",
+    "billing.apps.BillingConfig",
     "crispy_forms",
     "chartjs",
 ]
@@ -145,6 +146,16 @@ REPORT_TYPES = ["daily", "weekly", "monthly"]  # Available report types
 LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = 'inventory:dashboard'
 LOGOUT_REDIRECT_URL = 'login'
+
+# Email settings for invoice sending
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'  # For development
+# EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'  # For production
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = 'your-email@gmail.com'
+EMAIL_HOST_PASSWORD = 'your-app-password'
+DEFAULT_FROM_EMAIL = 'StockManager Pro <noreply@stockmanager.com>'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
