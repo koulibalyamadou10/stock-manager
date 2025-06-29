@@ -41,10 +41,16 @@ urlpatterns = [
     
     # Reports
     path('reports/', views.billing_reports, name='reports'),
-    path('reports/export/', views.export_invoices, name='export_invoices'),
+    path('reports/export/', views.export_reports, name='export_reports'),
+    path('export/invoices/', views.export_invoices, name='export_invoices'),
     
     # API endpoints
     path('api/customer-info/<int:customer_id>/', views.api_customer_info, name='api_customer_info'),
     path('api/product-info/<int:product_id>/', views.api_product_info, name='api_product_info'),
     path('api/invoice-stats/', views.api_invoice_stats, name='api_invoice_stats'),
+    path('api/revenue-chart/', views.api_revenue_chart, name='api_revenue_chart'),
+    path('api/top-customers/', views.api_top_customers, name='api_top_customers'),
+    path('api/top-products/', views.api_top_products, name='api_top_products'),
+    path('api/payment-methods/', views.api_payment_methods, name='api_payment_methods'),
+    path('api/monthly-comparison/', views.api_monthly_comparison, name='api_monthly_comparison'),
 ]

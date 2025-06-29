@@ -6,6 +6,7 @@ app_name = 'inventory'
 urlpatterns = [
     # Dashboard
     path('', views.dashboard, name='dashboard'),
+    path('analytics/', views.analytics_dashboard, name='analytics_dashboard'),
     
     # Categories
     path('categories/', views.category_list, name='category_list'),
@@ -45,6 +46,18 @@ urlpatterns = [
     path('api/search-by-barcode/', views.api_search_by_barcode, name='api_search_by_barcode'),
     path('api/stock-movement-chart/', views.stock_movement_chart, name='stock_movement_chart'),
     path('api/product-category-chart/', views.product_category_chart, name='product_category_chart'),
+    
+    # AI and Analytics API endpoints
+    path('api/sales-predictions/', views.api_sales_predictions, name='api_sales_predictions'),
+    path('api/stock-optimization/', views.api_stock_optimization, name='api_stock_optimization'),
+    path('api/seasonal-trends/', views.api_seasonal_trends, name='api_seasonal_trends'),
+    path('api/generate-predictions/', views.api_generate_predictions, name='api_generate_predictions'),
+    path('api/ai-insights/', views.api_ai_insights, name='api_ai_insights'),
+    path('api/predictive-chart/', views.api_predictive_chart, name='api_predictive_chart'),
+    path('api/performance-matrix/', views.api_performance_matrix, name='api_performance_matrix'),
+    path('api/seasonal-chart/', views.api_seasonal_chart, name='api_seasonal_chart'),
+    path('api/profitability-chart/', views.api_profitability_chart, name='api_profitability_chart'),
+    path('api/export-analytics/', views.api_export_analytics, name='api_export_analytics'),
     
     # Export functionality
     path('export/products/', views.export_products, name='export_products'),

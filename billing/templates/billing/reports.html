@@ -1,0 +1,540 @@
+{% extends 'billing/base.html' %}
+{% load currency_filters %}
+
+{% block title %}Rapports et Analyses - StockManager Pro{% endblock %}
+
+{% block content %}
+<div x-data="reportsData()" x-init="init()">
+    <!-- Page Header -->
+    <div class="mb-8">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-900">Rapports et Analyses</h1>
+                <p class="mt-2 text-gray-600">Analyses détaillées de votre activité commerciale</p>
+            </div>
+            <div class="mt-4 sm:mt-0 flex space-x-3">
+                <button @click="exportReport('pdf')" 
+                        class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors duration-200">
+                    <i class="fas fa-file-pdf mr-2 text-red-600"></i>
+                    Export PDF
+                </button>
+                <button @click="exportReport('excel')" 
+                        class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors duration-200">
+                    <i class="fas fa-file-excel mr-2 text-green-600"></i>
+                    Export Excel
+                </button>
+                <button @click="refreshData()" 
+                        class="inline-flex items-center px-4 py-2 border border-transparent rounded-lg text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 transition-colors duration-200">
+                    <i class="fas fa-sync-alt mr-2" :class="{ 'animate-spin': loading }"></i>
+                    Actualiser
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Date Range Filter -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Période</label>
+                <select x-model="selectedPeriod" @change="updateDateRange()" 
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    <option value="7">7 derniers jours</option>
+                    <option value="30">30 derniers jours</option>
+                    <option value="90">90 derniers jours</option>
+                    <option value="365">12 derniers mois</option>
+                    <option value="custom">Période personnalisée</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Date de début</label>
+                <input type="date" x-model="startDate" @change="loadData()"
+                       :disabled="selectedPeriod !== 'custom'"
+                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Date de fin</label>
+                <input type="date" x-model="endDate" @change="loadData()"
+                       :disabled="selectedPeriod !== 'custom'"
+                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100">
+            </div>
+            <div class="flex items-end">
+                <button @click="loadData()" 
+                        class="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200">
+                    <i class="fas fa-search mr-2"></i>
+                    Analyser
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- KPI Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <!-- Chiffre d'affaires -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-euro-sign text-green-600 text-xl"></i>
+                    </div>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-600">Chiffre d'affaires</p>
+                    <p class="text-2xl font-bold text-gray-900" x-text="formatCurrency(stats.revenue)">{{ stats.total_amount|gnf }}</p>
+                    <p class="text-xs mt-1" :class="stats.revenue_change >= 0 ? 'text-green-600' : 'text-red-600'">
+                        <i :class="stats.revenue_change >= 0 ? 'fas fa-arrow-up' : 'fas fa-arrow-down'" class="mr-1"></i>
+                        <span x-text="Math.abs(stats.revenue_change).toFixed(1)"></span>% vs période précédente
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Nombre de factures -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-file-invoice text-blue-600 text-xl"></i>
+                    </div>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-600">Factures émises</p>
+                    <p class="text-2xl font-bold text-gray-900" x-text="stats.invoice_count">{{ stats.total_invoices }}</p>
+                    <p class="text-xs text-blue-600 mt-1">
+                        <span x-text="stats.paid_invoices"></span> payées, 
+                        <span x-text="stats.pending_invoices"></span> en attente
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Ticket moyen -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-chart-line text-purple-600 text-xl"></i>
+                    </div>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-600">Ticket moyen</p>
+                    <p class="text-2xl font-bold text-gray-900" x-text="formatCurrency(stats.average_invoice)"></p>
+                    <p class="text-xs text-purple-600 mt-1">
+                        Par facture émise
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Taux de recouvrement -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    <div class="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-percentage text-orange-600 text-xl"></i>
+                    </div>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-600">Taux de recouvrement</p>
+                    <p class="text-2xl font-bold text-gray-900" x-text="stats.collection_rate + '%'"></p>
+                    <p class="text-xs text-orange-600 mt-1">
+                        Factures payées / émises
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Section -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <!-- Revenue Evolution Chart -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-lg font-semibold text-gray-900">Évolution du Chiffre d'Affaires</h3>
+                <div class="flex space-x-2">
+                    <button @click="chartType = 'line'" 
+                            :class="chartType === 'line' ? 'bg-blue-100 text-blue-700' : 'text-gray-500 hover:text-gray-700'"
+                            class="px-3 py-1 text-sm rounded-md transition-colors duration-200">Ligne</button>
+                    <button @click="chartType = 'bar'" 
+                            :class="chartType === 'bar' ? 'bg-blue-100 text-blue-700' : 'text-gray-500 hover:text-gray-700'"
+                            class="px-3 py-1 text-sm rounded-md transition-colors duration-200">Barres</button>
+                </div>
+            </div>
+            <div class="relative h-64">
+                <canvas id="revenueChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Top Customers Chart -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-lg font-semibold text-gray-900">Top 10 Clients</h3>
+                <button @click="toggleCustomerChart()" 
+                        class="text-sm text-blue-600 hover:text-blue-700 transition-colors duration-200">
+                    <i class="fas fa-exchange-alt mr-1"></i>
+                    <span x-text="customerChartType === 'doughnut' ? 'Vue barres' : 'Vue circulaire'"></span>
+                </button>
+            </div>
+            <div class="relative h-64">
+                <canvas id="customersChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detailed Tables -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <!-- Top Products -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200">
+            <div class="p-6 border-b border-gray-200">
+                <h3 class="text-lg font-semibold text-gray-900">Produits les Plus Vendus</h3>
+            </div>
+            <div class="p-6">
+                <div class="space-y-4">
+                    <template x-for="(product, index) in topProducts" :key="product.id">
+                        <div class="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition-colors duration-200">
+                            <div class="flex items-center space-x-3">
+                                <div class="flex-shrink-0">
+                                    <div class="w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium"
+                                         :class="{
+                                            'bg-yellow-100 text-yellow-800': index === 0,
+                                            'bg-gray-100 text-gray-800': index === 1,
+                                            'bg-orange-100 text-orange-800': index === 2,
+                                            'bg-blue-100 text-blue-800': index > 2
+                                         }">
+                                        <span x-text="index + 1"></span>
+                                    </div>
+                                </div>
+                                <div>
+                                    <p class="text-sm font-medium text-gray-900" x-text="product.name"></p>
+                                    <p class="text-sm text-gray-600">
+                                        <span x-text="product.quantity_sold"></span> vendus
+                                    </p>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <p class="text-sm font-medium text-gray-900" x-text="formatCurrency(product.revenue)"></p>
+                                <p class="text-xs text-gray-500" x-text="formatCurrency(product.avg_price) + ' / unité'"></p>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </div>
+        </div>
+
+        <!-- Payment Methods -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200">
+            <div class="p-6 border-b border-gray-200">
+                <h3 class="text-lg font-semibold text-gray-900">Méthodes de Paiement</h3>
+            </div>
+            <div class="p-6">
+                <div class="space-y-4">
+                    <template x-for="method in paymentMethods" :key="method.method">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center space-x-3">
+                                <div class="flex-shrink-0">
+                                    <i :class="{
+                                        'fas fa-money-bill-wave text-green-600': method.method === 'cash',
+                                        'fas fa-credit-card text-blue-600': method.method === 'card',
+                                        'fas fa-university text-purple-600': method.method === 'bank_transfer',
+                                        'fas fa-mobile-alt text-orange-600': method.method === 'mobile_money',
+                                        'fas fa-file-invoice text-gray-600': method.method === 'check'
+                                       }" class="text-lg"></i>
+                                </div>
+                                <div>
+                                    <p class="text-sm font-medium text-gray-900" x-text="method.display_name"></p>
+                                    <p class="text-sm text-gray-600">
+                                        <span x-text="method.count"></span> paiements
+                                    </p>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <p class="text-sm font-medium text-gray-900" x-text="formatCurrency(method.total)"></p>
+                                <p class="text-xs text-gray-500" x-text="method.percentage + '%'"></p>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Monthly Comparison -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div class="flex items-center justify-between mb-6">
+            <h3 class="text-lg font-semibold text-gray-900">Comparaison Mensuelle</h3>
+            <div class="text-sm text-gray-500">Évolution sur 12 mois</div>
+        </div>
+        <div class="relative h-80">
+            <canvas id="monthlyComparisonChart"></canvas>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function reportsData() {
+    return {
+        loading: false,
+        selectedPeriod: '30',
+        startDate: '',
+        endDate: '',
+        chartType: 'line',
+        customerChartType: 'doughnut',
+        stats: {
+            revenue: {{ stats.total_amount|default:0 }},
+            invoice_count: {{ stats.total_invoices|default:0 }},
+            paid_invoices: {{ stats.paid_invoices|default:0 }},
+            pending_invoices: {{ stats.pending_invoices|default:0 }},
+            average_invoice: 0,
+            collection_rate: 0,
+            revenue_change: 0
+        },
+        topProducts: [],
+        paymentMethods: [],
+        revenueChart: null,
+        customersChart: null,
+        monthlyChart: null,
+
+        init() {
+            this.updateDateRange();
+            this.loadData();
+            this.initCharts();
+        },
+
+        updateDateRange() {
+            const today = new Date();
+            const days = parseInt(this.selectedPeriod);
+            
+            if (this.selectedPeriod !== 'custom') {
+                this.endDate = today.toISOString().split('T')[0];
+                const startDate = new Date(today);
+                startDate.setDate(today.getDate() - days);
+                this.startDate = startDate.toISOString().split('T')[0];
+                this.loadData();
+            }
+        },
+
+        async loadData() {
+            this.loading = true;
+            try {
+                const params = new URLSearchParams({
+                    start_date: this.startDate,
+                    end_date: this.endDate
+                });
+
+                const [statsResponse, productsResponse, paymentsResponse] = await Promise.all([
+                    fetch(`/billing/api/invoice-stats/?${params}`),
+                    fetch(`/billing/api/top-products/?${params}`),
+                    fetch(`/billing/api/payment-methods/?${params}`)
+                ]);
+
+                this.stats = await statsResponse.json();
+                this.topProducts = await productsResponse.json();
+                this.paymentMethods = await paymentsResponse.json();
+
+                this.updateCharts();
+            } catch (error) {
+                console.error('Error loading data:', error);
+            } finally {
+                this.loading = false;
+            }
+        },
+
+        async refreshData() {
+            await this.loadData();
+        },
+
+        initCharts() {
+            this.initRevenueChart();
+            this.initCustomersChart();
+            this.initMonthlyChart();
+        },
+
+        async initRevenueChart() {
+            const params = new URLSearchParams({
+                start_date: this.startDate,
+                end_date: this.endDate
+            });
+
+            const response = await fetch(`/billing/api/revenue-chart/?${params}`);
+            const data = await response.json();
+
+            const ctx = document.getElementById('revenueChart').getContext('2d');
+            
+            if (this.revenueChart) {
+                this.revenueChart.destroy();
+            }
+
+            this.revenueChart = new Chart(ctx, {
+                type: this.chartType,
+                data: {
+                    labels: data.labels,
+                    datasets: [{
+                        label: 'Chiffre d\'affaires',
+                        data: data.revenue,
+                        borderColor: '#3b82f6',
+                        backgroundColor: this.chartType === 'line' ? 'rgba(59, 130, 246, 0.1)' : '#3b82f6',
+                        fill: this.chartType === 'line',
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return new Intl.NumberFormat('fr-FR', {
+                                        style: 'currency',
+                                        currency: 'GNF',
+                                        minimumFractionDigits: 0
+                                    }).format(value);
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        },
+
+        async initCustomersChart() {
+            const params = new URLSearchParams({
+                start_date: this.startDate,
+                end_date: this.endDate
+            });
+
+            const response = await fetch(`/billing/api/top-customers/?${params}`);
+            const data = await response.json();
+
+            const ctx = document.getElementById('customersChart').getContext('2d');
+            
+            if (this.customersChart) {
+                this.customersChart.destroy();
+            }
+
+            this.customersChart = new Chart(ctx, {
+                type: this.customerChartType,
+                data: {
+                    labels: data.labels,
+                    datasets: [{
+                        data: data.data,
+                        backgroundColor: [
+                            '#3b82f6', '#10b981', '#f59e0b', '#ef4444',
+                            '#8b5cf6', '#06b6d4', '#84cc16', '#f97316',
+                            '#ec4899', '#6b7280'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+        },
+
+        async initMonthlyChart() {
+            const response = await fetch('/billing/api/monthly-comparison/');
+            const data = await response.json();
+
+            const ctx = document.getElementById('monthlyComparisonChart').getContext('2d');
+            
+            if (this.monthlyChart) {
+                this.monthlyChart.destroy();
+            }
+
+            this.monthlyChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: data.labels,
+                    datasets: [{
+                        label: 'Chiffre d\'affaires',
+                        data: data.revenue,
+                        backgroundColor: '#3b82f6',
+                        borderColor: '#2563eb',
+                        borderWidth: 1
+                    }, {
+                        label: 'Nombre de factures',
+                        data: data.invoices,
+                        backgroundColor: '#10b981',
+                        borderColor: '#059669',
+                        borderWidth: 1,
+                        yAxisID: 'y1'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return new Intl.NumberFormat('fr-FR', {
+                                        style: 'currency',
+                                        currency: 'GNF',
+                                        minimumFractionDigits: 0
+                                    }).format(value);
+                                }
+                            }
+                        },
+                        y1: {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            beginAtZero: true,
+                            grid: {
+                                drawOnChartArea: false,
+                            },
+                        }
+                    }
+                }
+            });
+        },
+
+        async updateCharts() {
+            await this.initRevenueChart();
+            await this.initCustomersChart();
+        },
+
+        toggleCustomerChart() {
+            this.customerChartType = this.customerChartType === 'doughnut' ? 'bar' : 'doughnut';
+            this.initCustomersChart();
+        },
+
+        async exportReport(format) {
+            const params = new URLSearchParams({
+                start_date: this.startDate,
+                end_date: this.endDate,
+                format: format
+            });
+
+            window.open(`/billing/reports/export/?${params}`, '_blank');
+        },
+
+        formatCurrency(value) {
+            return new Intl.NumberFormat('fr-FR', {
+                style: 'currency',
+                currency: 'GNF',
+                minimumFractionDigits: 0
+            }).format(value || 0);
+        }
+    }
+}
+</script>
+{% endblock %}

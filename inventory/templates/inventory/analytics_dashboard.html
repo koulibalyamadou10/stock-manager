@@ -1,0 +1,681 @@
+{% extends 'inventory/base.html' %}
+{% load currency_filters %}
+
+{% block title %}Analyses Avancées - StockManager Pro{% endblock %}
+
+{% block content %}
+<div x-data="analyticsData()" x-init="init()">
+    <!-- Page Header -->
+    <div class="mb-8">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-900">Analyses Avancées</h1>
+                <p class="mt-2 text-gray-600">Intelligence artificielle et analyses prédictives</p>
+            </div>
+            <div class="mt-4 sm:mt-0 flex space-x-3">
+                <button @click="generatePredictions()" 
+                        :disabled="loading"
+                        class="inline-flex items-center px-4 py-2 border border-transparent rounded-lg text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 disabled:opacity-50 transition-colors duration-200">
+                    <i class="fas fa-brain mr-2" :class="{ 'animate-pulse': loading }"></i>
+                    Prédictions IA
+                </button>
+                <button @click="exportAnalytics()" 
+                        class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors duration-200">
+                    <i class="fas fa-download mr-2"></i>
+                    Exporter
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- AI Insights Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+        <!-- Sales Prediction -->
+        <div class="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl shadow-sm p-6 text-white">
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center">
+                    <div class="w-12 h-12 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-chart-line text-xl"></i>
+                    </div>
+                    <div class="ml-3">
+                        <h3 class="text-lg font-semibold">Prédiction Ventes</h3>
+                        <p class="text-purple-100 text-sm">30 prochains jours</p>
+                    </div>
+                </div>
+                <div class="text-right">
+                    <p class="text-2xl font-bold" x-text="formatCurrency(predictions.sales_forecast)"></p>
+                    <p class="text-purple-100 text-sm" x-text="predictions.sales_confidence + '% confiance'"></p>
+                </div>
+            </div>
+            <div class="bg-white bg-opacity-20 rounded-lg p-3">
+                <div class="flex justify-between text-sm">
+                    <span>Tendance:</span>
+                    <span x-text="predictions.sales_trend" class="font-medium"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stock Optimization -->
+        <div class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-sm p-6 text-white">
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center">
+                    <div class="w-12 h-12 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-boxes text-xl"></i>
+                    </div>
+                    <div class="ml-3">
+                        <h3 class="text-lg font-semibold">Optimisation Stock</h3>
+                        <p class="text-blue-100 text-sm">Recommandations IA</p>
+                    </div>
+                </div>
+                <div class="text-right">
+                    <p class="text-2xl font-bold" x-text="optimization.products_to_restock"></p>
+                    <p class="text-blue-100 text-sm">produits à réapprovisionner</p>
+                </div>
+            </div>
+            <div class="bg-white bg-opacity-20 rounded-lg p-3">
+                <div class="flex justify-between text-sm">
+                    <span>Économies potentielles:</span>
+                    <span x-text="formatCurrency(optimization.potential_savings)" class="font-medium"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Demand Forecast -->
+        <div class="bg-gradient-to-br from-green-500 to-green-600 rounded-xl shadow-sm p-6 text-white">
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center">
+                    <div class="w-12 h-12 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-trending-up text-xl"></i>
+                    </div>
+                    <div class="ml-3">
+                        <h3 class="text-lg font-semibold">Prévision Demande</h3>
+                        <p class="text-green-100 text-sm">Analyse saisonnière</p>
+                    </div>
+                </div>
+                <div class="text-right">
+                    <p class="text-2xl font-bold" x-text="demand.peak_season_increase + '%'"></p>
+                    <p class="text-green-100 text-sm">augmentation prévue</p>
+                </div>
+            </div>
+            <div class="bg-white bg-opacity-20 rounded-lg p-3">
+                <div class="flex justify-between text-sm">
+                    <span>Pic de demande:</span>
+                    <span x-text="demand.peak_period" class="font-medium"></span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Advanced Charts -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <!-- Predictive Sales Chart -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-lg font-semibold text-gray-900">Prédictions de Ventes</h3>
+                <div class="flex space-x-2">
+                    <button @click="predictionPeriod = '30'" 
+                            :class="predictionPeriod === '30' ? 'bg-blue-100 text-blue-700' : 'text-gray-500 hover:text-gray-700'"
+                            class="px-3 py-1 text-sm rounded-md transition-colors duration-200">30j</button>
+                    <button @click="predictionPeriod = '90'" 
+                            :class="predictionPeriod === '90' ? 'bg-blue-100 text-blue-700' : 'text-gray-500 hover:text-gray-700'"
+                            class="px-3 py-1 text-sm rounded-md transition-colors duration-200">90j</button>
+                    <button @click="predictionPeriod = '365'" 
+                            :class="predictionPeriod === '365' ? 'bg-blue-100 text-blue-700' : 'text-gray-500 hover:text-gray-700'"
+                            class="px-3 py-1 text-sm rounded-md transition-colors duration-200">1an</button>
+                </div>
+            </div>
+            <div class="relative h-64">
+                <canvas id="predictiveChart"></canvas>
+            </div>
+            <div class="mt-4 p-3 bg-blue-50 rounded-lg">
+                <div class="flex items-center">
+                    <i class="fas fa-info-circle text-blue-600 mr-2"></i>
+                    <p class="text-sm text-blue-800">
+                        Prédictions basées sur l'analyse des tendances historiques et des patterns saisonniers
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Product Performance Matrix -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-lg font-semibold text-gray-900">Matrice Performance Produits</h3>
+                <button @click="toggleMatrixView()" 
+                        class="text-sm text-blue-600 hover:text-blue-700 transition-colors duration-200">
+                    <i class="fas fa-exchange-alt mr-1"></i>
+                    <span x-text="matrixView === 'bubble' ? 'Vue grille' : 'Vue bulles'"></span>
+                </button>
+            </div>
+            <div class="relative h-64">
+                <canvas id="performanceMatrix"></canvas>
+            </div>
+            <div class="mt-4 grid grid-cols-2 gap-4 text-sm">
+                <div class="flex items-center">
+                    <div class="w-3 h-3 bg-green-500 rounded-full mr-2"></div>
+                    <span>Stars (Forte demande, Forte marge)</span>
+                </div>
+                <div class="flex items-center">
+                    <div class="w-3 h-3 bg-yellow-500 rounded-full mr-2"></div>
+                    <span>Cash Cows (Forte demande, Faible marge)</span>
+                </div>
+                <div class="flex items-center">
+                    <div class="w-3 h-3 bg-blue-500 rounded-full mr-2"></div>
+                    <span>Question Marks (Faible demande, Forte marge)</span>
+                </div>
+                <div class="flex items-center">
+                    <div class="w-3 h-3 bg-red-500 rounded-full mr-2"></div>
+                    <span>Dogs (Faible demande, Faible marge)</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- AI Recommendations -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <!-- Restock Recommendations -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200">
+            <div class="p-6 border-b border-gray-200">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-lg font-semibold text-gray-900">Recommandations de Réapprovisionnement</h3>
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                        IA
+                    </span>
+                </div>
+            </div>
+            <div class="p-6">
+                <div class="space-y-4">
+                    <template x-for="(recommendation, index) in restockRecommendations" :key="recommendation.product_id">
+                        <div class="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors duration-200">
+                            <div class="flex items-center space-x-3">
+                                <div class="flex-shrink-0">
+                                    <div class="w-10 h-10 rounded-lg flex items-center justify-center"
+                                         :class="{
+                                            'bg-red-100 text-red-600': recommendation.urgency === 'high',
+                                            'bg-yellow-100 text-yellow-600': recommendation.urgency === 'medium',
+                                            'bg-green-100 text-green-600': recommendation.urgency === 'low'
+                                         }">
+                                        <i class="fas fa-box text-sm"></i>
+                                    </div>
+                                </div>
+                                <div>
+                                    <p class="text-sm font-medium text-gray-900" x-text="recommendation.product_name"></p>
+                                    <p class="text-sm text-gray-600">
+                                        Stock actuel: <span x-text="recommendation.current_stock"></span> |
+                                        Recommandé: <span x-text="recommendation.recommended_quantity"></span>
+                                    </p>
+                                    <p class="text-xs text-gray-500" x-text="recommendation.reason"></p>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <p class="text-sm font-medium text-gray-900" x-text="formatCurrency(recommendation.estimated_cost)"></p>
+                                <p class="text-xs" :class="{
+                                    'text-red-600': recommendation.urgency === 'high',
+                                    'text-yellow-600': recommendation.urgency === 'medium',
+                                    'text-green-600': recommendation.urgency === 'low'
+                                }" x-text="recommendation.urgency_label"></p>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </div>
+        </div>
+
+        <!-- Seasonal Trends -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200">
+            <div class="p-6 border-b border-gray-200">
+                <h3 class="text-lg font-semibold text-gray-900">Tendances Saisonnières</h3>
+            </div>
+            <div class="p-6">
+                <div class="relative h-64">
+                    <canvas id="seasonalChart"></canvas>
+                </div>
+                <div class="mt-4 space-y-3">
+                    <template x-for="trend in seasonalTrends" :key="trend.period">
+                        <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                            <div>
+                                <p class="text-sm font-medium text-gray-900" x-text="trend.period"></p>
+                                <p class="text-sm text-gray-600" x-text="trend.description"></p>
+                            </div>
+                            <div class="text-right">
+                                <p class="text-sm font-medium" :class="trend.change >= 0 ? 'text-green-600' : 'text-red-600'">
+                                    <i :class="trend.change >= 0 ? 'fas fa-arrow-up' : 'fas fa-arrow-down'" class="mr-1"></i>
+                                    <span x-text="Math.abs(trend.change) + '%'"></span>
+                                </p>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Profitability Analysis -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
+        <div class="flex items-center justify-between mb-6">
+            <h3 class="text-lg font-semibold text-gray-900">Analyse de Rentabilité</h3>
+            <div class="flex space-x-2">
+                <select x-model="profitabilityPeriod" @change="updateProfitabilityChart()"
+                        class="px-3 py-1 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    <option value="7">7 jours</option>
+                    <option value="30">30 jours</option>
+                    <option value="90">90 jours</option>
+                </select>
+            </div>
+        </div>
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div class="lg:col-span-2">
+                <div class="relative h-64">
+                    <canvas id="profitabilityChart"></canvas>
+                </div>
+            </div>
+            <div class="space-y-4">
+                <div class="p-4 bg-green-50 rounded-lg">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-green-800">Marge Brute</p>
+                            <p class="text-2xl font-bold text-green-900" x-text="profitability.gross_margin + '%'"></p>
+                        </div>
+                        <i class="fas fa-percentage text-green-600 text-xl"></i>
+                    </div>
+                </div>
+                <div class="p-4 bg-blue-50 rounded-lg">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-blue-800">Bénéfice Net</p>
+                            <p class="text-2xl font-bold text-blue-900" x-text="formatCurrency(profitability.net_profit)"></p>
+                        </div>
+                        <i class="fas fa-chart-line text-blue-600 text-xl"></i>
+                    </div>
+                </div>
+                <div class="p-4 bg-purple-50 rounded-lg">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-purple-800">ROI</p>
+                            <p class="text-2xl font-bold text-purple-900" x-text="profitability.roi + '%'"></p>
+                        </div>
+                        <i class="fas fa-coins text-purple-600 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- AI Assistant -->
+    <div class="bg-gradient-to-r from-purple-600 to-blue-600 rounded-xl shadow-sm p-6 text-white">
+        <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center">
+                <div class="w-12 h-12 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-robot text-xl"></i>
+                </div>
+                <div class="ml-3">
+                    <h3 class="text-lg font-semibold">Assistant IA StockManager</h3>
+                    <p class="text-purple-100 text-sm">Conseils personnalisés pour votre business</p>
+                </div>
+            </div>
+            <button @click="getAIInsights()" 
+                    :disabled="loading"
+                    class="px-4 py-2 bg-white bg-opacity-20 rounded-lg hover:bg-opacity-30 transition-all duration-200 disabled:opacity-50">
+                <i class="fas fa-magic mr-2"></i>
+                Analyser
+            </button>
+        </div>
+        <div class="bg-white bg-opacity-10 rounded-lg p-4">
+            <div x-show="aiInsights.length > 0" class="space-y-3">
+                <template x-for="insight in aiInsights" :key="insight.id">
+                    <div class="flex items-start space-x-3">
+                        <div class="flex-shrink-0">
+                            <i :class="insight.icon" class="text-yellow-300"></i>
+                        </div>
+                        <div>
+                            <p class="text-sm font-medium" x-text="insight.title"></p>
+                            <p class="text-sm text-purple-100" x-text="insight.description"></p>
+                        </div>
+                    </div>
+                </template>
+            </div>
+            <div x-show="aiInsights.length === 0" class="text-center py-4">
+                <p class="text-purple-100">Cliquez sur "Analyser" pour obtenir des conseils personnalisés</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function analyticsData() {
+    return {
+        loading: false,
+        predictionPeriod: '30',
+        matrixView: 'bubble',
+        profitabilityPeriod: '30',
+        predictions: {
+            sales_forecast: 0,
+            sales_confidence: 85,
+            sales_trend: 'Croissance'
+        },
+        optimization: {
+            products_to_restock: 0,
+            potential_savings: 0
+        },
+        demand: {
+            peak_season_increase: 0,
+            peak_period: 'Décembre'
+        },
+        profitability: {
+            gross_margin: 0,
+            net_profit: 0,
+            roi: 0
+        },
+        restockRecommendations: [],
+        seasonalTrends: [],
+        aiInsights: [],
+        charts: {},
+
+        init() {
+            this.loadAnalyticsData();
+            this.initCharts();
+        },
+
+        async loadAnalyticsData() {
+            this.loading = true;
+            try {
+                const [predictionsResponse, optimizationResponse, trendsResponse] = await Promise.all([
+                    fetch('/inventory/api/sales-predictions/'),
+                    fetch('/inventory/api/stock-optimization/'),
+                    fetch('/inventory/api/seasonal-trends/')
+                ]);
+
+                this.predictions = await predictionsResponse.json();
+                this.optimization = await optimizationResponse.json();
+                const trendsData = await trendsResponse.json();
+                this.seasonalTrends = trendsData.trends;
+                this.restockRecommendations = trendsData.recommendations;
+
+                this.updateCharts();
+            } catch (error) {
+                console.error('Error loading analytics data:', error);
+            } finally {
+                this.loading = false;
+            }
+        },
+
+        async generatePredictions() {
+            this.loading = true;
+            try {
+                const response = await fetch('/inventory/api/generate-predictions/', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        period: this.predictionPeriod
+                    })
+                });
+
+                const data = await response.json();
+                this.predictions = data.predictions;
+                this.updateCharts();
+            } catch (error) {
+                console.error('Error generating predictions:', error);
+            } finally {
+                this.loading = false;
+            }
+        },
+
+        async getAIInsights() {
+            this.loading = true;
+            try {
+                const response = await fetch('/inventory/api/ai-insights/');
+                const data = await response.json();
+                this.aiInsights = data.insights;
+            } catch (error) {
+                console.error('Error getting AI insights:', error);
+            } finally {
+                this.loading = false;
+            }
+        },
+
+        initCharts() {
+            this.initPredictiveChart();
+            this.initPerformanceMatrix();
+            this.initSeasonalChart();
+            this.initProfitabilityChart();
+        },
+
+        async initPredictiveChart() {
+            const response = await fetch(`/inventory/api/predictive-chart/?period=${this.predictionPeriod}`);
+            const data = await response.json();
+
+            const ctx = document.getElementById('predictiveChart').getContext('2d');
+            
+            if (this.charts.predictive) {
+                this.charts.predictive.destroy();
+            }
+
+            this.charts.predictive = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.labels,
+                    datasets: [{
+                        label: 'Ventes Historiques',
+                        data: data.historical,
+                        borderColor: '#3b82f6',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        fill: true,
+                        tension: 0.4
+                    }, {
+                        label: 'Prédictions',
+                        data: data.predictions,
+                        borderColor: '#8b5cf6',
+                        backgroundColor: 'rgba(139, 92, 246, 0.1)',
+                        borderDash: [5, 5],
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        },
+
+        async initPerformanceMatrix() {
+            const response = await fetch('/inventory/api/performance-matrix/');
+            const data = await response.json();
+
+            const ctx = document.getElementById('performanceMatrix').getContext('2d');
+            
+            if (this.charts.matrix) {
+                this.charts.matrix.destroy();
+            }
+
+            this.charts.matrix = new Chart(ctx, {
+                type: 'scatter',
+                data: {
+                    datasets: [{
+                        label: 'Stars',
+                        data: data.stars,
+                        backgroundColor: '#10b981',
+                        borderColor: '#059669'
+                    }, {
+                        label: 'Cash Cows',
+                        data: data.cash_cows,
+                        backgroundColor: '#f59e0b',
+                        borderColor: '#d97706'
+                    }, {
+                        label: 'Question Marks',
+                        data: data.question_marks,
+                        backgroundColor: '#3b82f6',
+                        borderColor: '#2563eb'
+                    }, {
+                        label: 'Dogs',
+                        data: data.dogs,
+                        backgroundColor: '#ef4444',
+                        borderColor: '#dc2626'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Volume de ventes'
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Marge bénéficiaire'
+                            }
+                        }
+                    }
+                }
+            });
+        },
+
+        async initSeasonalChart() {
+            const response = await fetch('/inventory/api/seasonal-chart/');
+            const data = await response.json();
+
+            const ctx = document.getElementById('seasonalChart').getContext('2d');
+            
+            if (this.charts.seasonal) {
+                this.charts.seasonal.destroy();
+            }
+
+            this.charts.seasonal = new Chart(ctx, {
+                type: 'radar',
+                data: {
+                    labels: data.labels,
+                    datasets: [{
+                        label: 'Ventes Moyennes',
+                        data: data.sales,
+                        borderColor: '#3b82f6',
+                        backgroundColor: 'rgba(59, 130, 246, 0.2)',
+                        pointBackgroundColor: '#3b82f6'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        r: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        },
+
+        async initProfitabilityChart() {
+            const response = await fetch(`/inventory/api/profitability-chart/?period=${this.profitabilityPeriod}`);
+            const data = await response.json();
+
+            this.profitability = data.metrics;
+
+            const ctx = document.getElementById('profitabilityChart').getContext('2d');
+            
+            if (this.charts.profitability) {
+                this.charts.profitability.destroy();
+            }
+
+            this.charts.profitability = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.labels,
+                    datasets: [{
+                        label: 'Revenus',
+                        data: data.revenue,
+                        borderColor: '#10b981',
+                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                        yAxisID: 'y'
+                    }, {
+                        label: 'Coûts',
+                        data: data.costs,
+                        borderColor: '#ef4444',
+                        backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                        yAxisID: 'y'
+                    }, {
+                        label: 'Bénéfices',
+                        data: data.profit,
+                        borderColor: '#3b82f6',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        yAxisID: 'y'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        },
+
+        async updateCharts() {
+            await this.initPredictiveChart();
+            await this.initPerformanceMatrix();
+            await this.initProfitabilityChart();
+        },
+
+        async updateProfitabilityChart() {
+            await this.initProfitabilityChart();
+        },
+
+        toggleMatrixView() {
+            this.matrixView = this.matrixView === 'bubble' ? 'grid' : 'bubble';
+            this.initPerformanceMatrix();
+        },
+
+        async exportAnalytics() {
+            window.open('/inventory/api/export-analytics/', '_blank');
+        },
+
+        formatCurrency(value) {
+            return new Intl.NumberFormat('fr-FR', {
+                style: 'currency',
+                currency: 'GNF',
+                minimumFractionDigits: 0
+            }).format(value || 0);
+        }
+    }
+}
+</script>
+{% endblock %}

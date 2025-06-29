@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse, HttpResponse, Http404
-from django.db.models import Sum, Count, Q
+from django.db.models import Sum, Count, Q, Avg, F
 from django.utils import timezone
 from django.core.paginator import Paginator
 from django.db import transaction
@@ -10,6 +10,8 @@ from django.template.loader import render_to_string
 from datetime import datetime, timedelta
 import csv
 import json
+import xlsxwriter
+from io import BytesIO
 from .models import (
     Company, Customer, Invoice, InvoiceItem, InvoiceTemplate, 
     Payment, EmailLog
@@ -678,5 +680,334 @@ def api_product_info(request, product_id):
 @login_required
 def api_invoice_stats(request):
     """API pour les statistiques de facturation"""
-    stats = get_invoice_statistics()
+    start_date = request.GET.get('start_date')
+    end_date = request.GET.get('end_date')
+    
+    if start_date:
+        start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
+    if end_date:
+        end_date = datetime.strptime(end_date, '%Y-%m-%d').date()
+    
+    stats = get_invoice_statistics(start_date, end_date)
+    
+    # Calculate additional metrics
+    if stats['total_invoices'] > 0:
+        stats['average_invoice'] = stats['total_amount'] / stats['total_invoices']
+        stats['collection_rate'] = (stats['paid_invoices'] / stats['total_invoices']) * 100
+    else:
+        stats['average_invoice'] = 0
+        stats['collection_rate'] = 0
+    
+    # Calculate change vs previous period
+    if start_date and end_date:
+        period_days = (end_date - start_date).days
+        prev_start = start_date - timedelta(days=period_days)
+        prev_end = start_date
+        
+        prev_stats = get_invoice_statistics(prev_start, prev_end)
+        
+        if prev_stats['total_amount'] > 0:
+            stats['revenue_change'] = ((stats['total_amount'] - prev_stats['total_amount']) / prev_stats['total_amount']) * 100
+        else:
+            stats['revenue_change'] = 0
+    else:
+        stats['revenue_change'] = 0
+    
     return JsonResponse(stats)
+
+@login_required
+def api_revenue_chart(request):
+    """API pour le graphique des revenus"""
+    start_date = request.GET.get('start_date')
+    end_date = request.GET.get('end_date')
+    
+    if not start_date or not end_date:
+        end_date = timezone.now().date()
+        start_date = end_date - timedelta(days=30)
+    else:
+        start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
+        end_date = datetime.strptime(end_date, '%Y-%m-%d').date()
+    
+    labels = []
+    revenue_data = []
+    
+    current_date = start_date
+    while current_date <= end_date:
+        labels.append(current_date.strftime('%d/%m'))
+        
+        revenue = Invoice.objects.filter(
+            issue_date=current_date,
+            status='paid'
+        ).aggregate(total=Sum('total_amount'))['total'] or 0
+        
+        revenue_data.append(float(revenue))
+        current_date += timedelta(days=1)
+    
+    return JsonResponse({
+        'labels': labels,
+        'revenue': revenue_data
+    })
+
+@login_required
+def api_top_customers(request):
+    """API pour les meilleurs clients"""
+    start_date = request.GET.get('start_date')
+    end_date = request.GET.get('end_date')
+    
+    customers = Customer.objects.filter(is_active=True)
+    
+    if start_date and end_date:
+        start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
+        end_date = datetime.strptime(end_date, '%Y-%m-%d').date()
+        customers = customers.filter(
+            invoices__issue_date__range=[start_date, end_date],
+            invoices__status='paid'
+        )
+    
+    customers = customers.annotate(
+        total_amount=Sum('invoices__total_amount', filter=Q(invoices__status='paid'))
+    ).order_by('-total_amount')[:10]
+    
+    return JsonResponse({
+        'labels': [customer.name for customer in customers],
+        'data': [float(customer.total_amount or 0) for customer in customers]
+    })
+
+@login_required
+def api_top_products(request):
+    """API pour les produits les plus vendus"""
+    start_date = request.GET.get('start_date')
+    end_date = request.GET.get('end_date')
+    
+    from inventory.models import Product
+    
+    products = Product.objects.filter(is_active=True)
+    
+    if start_date and end_date:
+        start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
+        end_date = datetime.strptime(end_date, '%Y-%m-%d').date()
+        
+        # Get products sold in invoice items
+        products = products.filter(
+            invoiceitem__invoice__issue_date__range=[start_date, end_date],
+            invoiceitem__invoice__status='paid'
+        ).annotate(
+            quantity_sold=Sum('invoiceitem__quantity'),
+            revenue=Sum(F('invoiceitem__quantity') * F('invoiceitem__unit_price')),
+            avg_price=Avg('invoiceitem__unit_price')
+        ).order_by('-revenue')[:10]
+    else:
+        products = products.annotate(
+            quantity_sold=Sum('invoiceitem__quantity'),
+            revenue=Sum(F('invoiceitem__quantity') * F('invoiceitem__unit_price')),
+            avg_price=Avg('invoiceitem__unit_price')
+        ).order_by('-revenue')[:10]
+    
+    data = []
+    for product in products:
+        data.append({
+            'id': product.id,
+            'name': product.name,
+            'quantity_sold': product.quantity_sold or 0,
+            'revenue': float(product.revenue or 0),
+            'avg_price': float(product.avg_price or 0)
+        })
+    
+    return data
+
+@login_required
+def api_payment_methods(request):
+    """API pour les méthodes de paiement"""
+    start_date = request.GET.get('start_date')
+    end_date = request.GET.get('end_date')
+    
+    payments = Payment.objects.all()
+    
+    if start_date and end_date:
+        start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
+        end_date = datetime.strptime(end_date, '%Y-%m-%d').date()
+        payments = payments.filter(payment_date__range=[start_date, end_date])
+    
+    # Group by payment method
+    methods = payments.values('payment_method').annotate(
+        total=Sum('amount'),
+        count=Count('id')
+    ).order_by('-total')
+    
+    total_amount = payments.aggregate(total=Sum('amount'))['total'] or 0
+    
+    data = []
+    for method in methods:
+        percentage = (method['total'] / total_amount * 100) if total_amount > 0 else 0
+        data.append({
+            'method': method['payment_method'],
+            'display_name': dict(Payment.PAYMENT_METHODS)[method['payment_method']],
+            'total': float(method['total']),
+            'count': method['count'],
+            'percentage': round(percentage, 1)
+        })
+    
+    return JsonResponse(data, safe=False)
+
+@login_required
+def api_monthly_comparison(request):
+    """API pour la comparaison mensuelle"""
+    # Get last 12 months
+    end_date = timezone.now().date()
+    start_date = end_date.replace(day=1) - timedelta(days=365)
+    
+    labels = []
+    revenue_data = []
+    invoice_data = []
+    
+    current_date = start_date.replace(day=1)
+    while current_date <= end_date:
+        next_month = (current_date.replace(day=28) + timedelta(days=4)).replace(day=1)
+        
+        labels.append(current_date.strftime('%b %Y'))
+        
+        # Revenue for the month
+        revenue = Invoice.objects.filter(
+            issue_date__gte=current_date,
+            issue_date__lt=next_month,
+            status='paid'
+        ).aggregate(total=Sum('total_amount'))['total'] or 0
+        
+        # Number of invoices for the month
+        invoice_count = Invoice.objects.filter(
+            issue_date__gte=current_date,
+            issue_date__lt=next_month
+        ).count()
+        
+        revenue_data.append(float(revenue))
+        invoice_data.append(invoice_count)
+        
+        current_date = next_month
+    
+    return JsonResponse({
+        'labels': labels,
+        'revenue': revenue_data,
+        'invoices': invoice_data
+    })
+
+@login_required
+def export_reports(request):
+    """Export reports in various formats"""
+    format_type = request.GET.get('format', 'excel')
+    start_date = request.GET.get('start_date')
+    end_date = request.GET.get('end_date')
+    
+    if start_date:
+        start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
+    if end_date:
+        end_date = datetime.strptime(end_date, '%Y-%m-%d').date()
+    
+    if format_type == 'excel':
+        return export_excel_report(start_date, end_date)
+    elif format_type == 'pdf':
+        return export_pdf_report(start_date, end_date)
+    else:
+        return export_csv_report(start_date, end_date)
+
+def export_excel_report(start_date, end_date):
+    """Export detailed Excel report"""
+    output = BytesIO()
+    workbook = xlsxwriter.Workbook(output)
+    
+    # Create worksheets
+    summary_sheet = workbook.add_worksheet('Résumé')
+    invoices_sheet = workbook.add_worksheet('Factures')
+    payments_sheet = workbook.add_worksheet('Paiements')
+    customers_sheet = workbook.add_worksheet('Clients')
+    
+    # Define formats
+    header_format = workbook.add_format({
+        'bold': True,
+        'bg_color': '#3b82f6',
+        'font_color': 'white',
+        'border': 1
+    })
+    
+    currency_format = workbook.add_format({'num_format': '#,##0'})
+    date_format = workbook.add_format({'num_format': 'dd/mm/yyyy'})
+    
+    # Summary sheet
+    stats = get_invoice_statistics(start_date, end_date)
+    
+    summary_sheet.write('A1', 'Rapport de Facturation', header_format)
+    summary_sheet.write('A3', 'Période:', header_format)
+    summary_sheet.write('B3', f"{start_date} - {end_date}" if start_date and end_date else "Toutes périodes")
+    
+    summary_sheet.write('A5', 'Métrique', header_format)
+    summary_sheet.write('B5', 'Valeur', header_format)
+    
+    metrics = [
+        ('Total Factures', stats['total_invoices']),
+        ('Chiffre d\'affaires', stats['total_amount']),
+        ('Factures Payées', stats['paid_invoices']),
+        ('Montant Encaissé', stats['paid_amount']),
+        ('Factures en Attente', stats['pending_invoices']),
+        ('Montant en Attente', stats['pending_amount']),
+    ]
+    
+    for i, (metric, value) in enumerate(metrics, 6):
+        summary_sheet.write(f'A{i}', metric)
+        if 'Montant' in metric or 'affaires' in metric:
+            summary_sheet.write(f'B{i}', value, currency_format)
+        else:
+            summary_sheet.write(f'B{i}', value)
+    
+    # Invoices sheet
+    invoices = Invoice.objects.select_related('customer').order_by('-created_at')
+    if start_date and end_date:
+        invoices = invoices.filter(issue_date__range=[start_date, end_date])
+    
+    invoice_headers = ['Numéro', 'Client', 'Date Émission', 'Date Échéance', 'Statut', 'Total']
+    for col, header in enumerate(invoice_headers):
+        invoices_sheet.write(0, col, header, header_format)
+    
+    for row, invoice in enumerate(invoices[:1000], 1):
+        invoices_sheet.write(row, 0, invoice.invoice_number)
+        invoices_sheet.write(row, 1, invoice.customer.name)
+        invoices_sheet.write(row, 2, invoice.issue_date, date_format)
+        invoices_sheet.write(row, 3, invoice.due_date, date_format)
+        invoices_sheet.write(row, 4, invoice.get_status_display())
+        invoices_sheet.write(row, 5, float(invoice.total_amount), currency_format)
+    
+    # Auto-adjust column widths
+    for sheet in [summary_sheet, invoices_sheet, payments_sheet, customers_sheet]:
+        sheet.set_column('A:Z', 15)
+    
+    workbook.close()
+    output.seek(0)
+    
+    response = HttpResponse(
+        output.read(),
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+    response['Content-Disposition'] = 'attachment; filename=rapport_facturation.xlsx'
+    return response
+
+def export_csv_report(start_date, end_date):
+    """Export CSV report"""
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename=rapport_facturation.csv'
+    
+    writer = csv.writer(response)
+    writer.writerow(['Numéro', 'Client', 'Date Émission', 'Date Échéance', 'Statut', 'Total'])
+    
+    invoices = Invoice.objects.select_related('customer').order_by('-created_at')
+    if start_date and end_date:
+        invoices = invoices.filter(issue_date__range=[start_date, end_date])
+    
+    for invoice in invoices[:1000]:
+        writer.writerow([
+            invoice.invoice_number,
+            invoice.customer.name,
+            invoice.issue_date.strftime('%Y-%m-%d'),
+            invoice.due_date.strftime('%Y-%m-%d'),
+            invoice.get_status_display(),
+            float(invoice.total_amount)
+        ])
+    
+    return response

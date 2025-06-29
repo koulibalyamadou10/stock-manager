@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Facture {{ invoice.invoice_number }}</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 2cm;
+        }
+        
+        body {
+            font-family: 'Arial', sans-serif;
+            font-size: 12px;
+            line-height: 1.4;
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+        
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 30px;
+            border-bottom: 2px solid {{ template.header_color|default:"#3b82f6" }};
+            padding-bottom: 20px;
+        }
+        
+        .company-info {
+            flex: 1;
+        }
+        
+        .company-logo {
+            max-width: 150px;
+            max-height: 80px;
+        }
+        
+        .invoice-title {
+            font-size: 28px;
+            font-weight: bold;
+            color: {{ template.header_color|default:"#3b82f6" }};
+            text-align: right;
+            margin: 0;
+        }
+        
+        .invoice-details {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 30px;
+        }
+        
+        .billing-info, .invoice-meta {
+            flex: 1;
+        }
+        
+        .invoice-meta {
+            text-align: right;
+        }
+        
+        .info-block {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+        }
+        
+        .info-title {
+            font-weight: bold;
+            color: {{ template.header_color|default:"#3b82f6" }};
+            margin-bottom: 10px;
+        }
+        
+        .items-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 30px;
+        }
+        
+        .items-table th {
+            background-color: {{ template.header_color|default:"#3b82f6" }};
+            color: white;
+            padding: 12px;
+            text-align: left;
+            font-weight: bold;
+        }
+        
+        .items-table td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        .items-table tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+        
+        .text-right {
+            text-align: right;
+        }
+        
+        .text-center {
+            text-align: center;
+        }
+        
+        .totals-section {
+            float: right;
+            width: 300px;
+            margin-bottom: 30px;
+        }
+        
+        .totals-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .totals-table td {
+            padding: 8px 12px;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        .totals-table .total-row {
+            background-color: {{ template.header_color|default:"#3b82f6" }};
+            color: white;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        
+        .notes-section {
+            clear: both;
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #ddd;
+        }
+        
+        .footer {
+            margin-top: 50px;
+            padding-top: 20px;
+            border-top: 1px solid #ddd;
+            text-align: center;
+            font-size: 10px;
+            color: #666;
+        }
+        
+        .payment-info {
+            background-color: #e3f2fd;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 20px;
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 10px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        
+        .status-draft { background-color: #ffc107; color: #000; }
+        .status-sent { background-color: #17a2b8; color: #fff; }
+        .status-paid { background-color: #28a745; color: #fff; }
+        .status-overdue { background-color: #dc3545; color: #fff; }
+        .status-cancelled { background-color: #6c757d; color: #fff; }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <div class="company-info">
+            {% if company.logo and template.show_logo %}
+                <img src="{{ company.logo.url }}" alt="{{ company.name }}" class="company-logo">
+            {% endif %}
+            <h2>{{ company.name }}</h2>
+            <p>{{ company.address|linebreaks }}</p>
+            {% if company.phone %}<p><strong>Tél:</strong> {{ company.phone }}</p>{% endif %}
+            {% if company.email %}<p><strong>Email:</strong> {{ company.email }}</p>{% endif %}
+            {% if company.tax_number %}<p><strong>N° Fiscal:</strong> {{ company.tax_number }}</p>{% endif %}
+        </div>
+        <div>
+            <h1 class="invoice-title">FACTURE</h1>
+            <span class="status-badge status-{{ invoice.status }}">{{ invoice.get_status_display }}</span>
+        </div>
+    </div>
+
+    <!-- Invoice Details -->
+    <div class="invoice-details">
+        <div class="billing-info">
+            <div class="info-block">
+                <div class="info-title">Facturé à:</div>
+                <strong>{{ invoice.customer.name }}</strong><br>
+                {% if invoice.customer.address %}{{ invoice.customer.address|linebreaks }}{% endif %}
+                {% if invoice.customer.phone %}<strong>Tél:</strong> {{ invoice.customer.phone }}<br>{% endif %}
+                {% if invoice.customer.email %}<strong>Email:</strong> {{ invoice.customer.email }}<br>{% endif %}
+                {% if invoice.customer.tax_number %}<strong>N° Fiscal:</strong> {{ invoice.customer.tax_number }}{% endif %}
+            </div>
+        </div>
+        
+        <div class="invoice-meta">
+            <div class="info-block">
+                <div class="info-title">Détails de la facture:</div>
+                <strong>N° Facture:</strong> {{ invoice.invoice_number }}<br>
+                <strong>Date d'émission:</strong> {{ invoice.issue_date|date:"d/m/Y" }}<br>
+                <strong>Date d'échéance:</strong> {{ invoice.due_date|date:"d/m/Y" }}<br>
+                {% if invoice.reference %}<strong>Référence:</strong> {{ invoice.reference }}<br>{% endif %}
+                <strong>Conditions:</strong> {{ invoice.get_payment_terms_display }}
+            </div>
+        </div>
+    </div>
+
+    <!-- Items Table -->
+    <table class="items-table">
+        <thead>
+            <tr>
+                <th>Description</th>
+                <th class="text-center">Quantité</th>
+                <th class="text-right">Prix unitaire</th>
+                <th class="text-right">Total</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in invoice.items.all %}
+            <tr>
+                <td>
+                    <strong>{{ item.description }}</strong>
+                    {% if item.product %}
+                        <br><small>SKU: {{ item.product.sku }}</small>
+                    {% endif %}
+                </td>
+                <td class="text-center">{{ item.quantity|floatformat:2 }}</td>
+                <td class="text-right">{{ item.unit_price|floatformat:0 }} GNF</td>
+                <td class="text-right">{{ item.total|floatformat:0 }} GNF</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <!-- Totals -->
+    <div class="totals-section">
+        <table class="totals-table">
+            <tr>
+                <td><strong>Sous-total:</strong></td>
+                <td class="text-right">{{ invoice.subtotal|floatformat:0 }} GNF</td>
+            </tr>
+            {% if invoice.discount_amount > 0 %}
+            <tr>
+                <td><strong>Remise ({{ invoice.discount_rate }}%):</strong></td>
+                <td class="text-right">-{{ invoice.discount_amount|floatformat:0 }} GNF</td>
+            </tr>
+            {% endif %}
+            {% if invoice.tax_amount > 0 %}
+            <tr>
+                <td><strong>TVA ({{ invoice.tax_rate }}%):</strong></td>
+                <td class="text-right">{{ invoice.tax_amount|floatformat:0 }} GNF</td>
+            </tr>
+            {% endif %}
+            <tr class="total-row">
+                <td><strong>TOTAL:</strong></td>
+                <td class="text-right"><strong>{{ invoice.total_amount|floatformat:0 }} GNF</strong></td>
+            </tr>
+        </tbody>
+    </table>
+
+    <!-- Payment Information -->
+    {% if company.bank_details %}
+    <div class="payment-info">
+        <div class="info-title">Informations de paiement:</div>
+        {{ company.bank_details|linebreaks }}
+    </div>
+    {% endif %}
+
+    <!-- Notes -->
+    {% if invoice.notes %}
+    <div class="notes-section">
+        <div class="info-title">Notes:</div>
+        {{ invoice.notes|linebreaks }}
+    </div>
+    {% endif %}
+
+    <!-- Terms and Conditions -->
+    {% if template.terms_conditions %}
+    <div class="notes-section">
+        <div class="info-title">Conditions générales:</div>
+        {{ template.terms_conditions|linebreaks }}
+    </div>
+    {% endif %}
+
+    <!-- Footer -->
+    <div class="footer">
+        {% if template.footer_text %}
+            {{ template.footer_text|linebreaks }}
+        {% else %}
+            <p>Merci pour votre confiance !</p>
+        {% endif %}
+        {% if company.website %}
+            <p>{{ company.website }}</p>
+        {% endif %}
+    </div>
+</body>
+</html>
