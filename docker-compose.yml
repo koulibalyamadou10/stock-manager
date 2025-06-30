@@ -1,0 +1,90 @@
+version: '3.8'
+
+services:
+  db:
+    image: mysql:8.0
+    restart: always
+    environment:
+      MYSQL_DATABASE: stockmanager_db
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_USER: stockuser
+      MYSQL_PASSWORD: stockpassword
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./mysql-init:/docker-entrypoint-initdb.d
+
+  redis:
+    image: redis:7-alpine
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+  web:
+    build: .
+    restart: always
+    ports:
+      - "8000:8000"
+    environment:
+      - DB_NAME=stockmanager_db
+      - DB_USER=stockuser
+      - DB_PASSWORD=stockpassword
+      - DB_HOST=db
+      - DB_PORT=3306
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    depends_on:
+      - db
+      - redis
+    volumes:
+      - .:/app
+      - media_files:/app/media
+      - static_files:/app/staticfiles
+
+  celery:
+    build: .
+    restart: always
+    command: celery -A celery_app worker --loglevel=info
+    environment:
+      - DB_NAME=stockmanager_db
+      - DB_USER=stockuser
+      - DB_PASSWORD=stockpassword
+      - DB_HOST=db
+      - DB_PORT=3306
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    depends_on:
+      - db
+      - redis
+    volumes:
+      - .:/app
+
+  celery-beat:
+    build: .
+    restart: always
+    command: celery -A celery_app beat --loglevel=info
+    environment:
+      - DB_NAME=stockmanager_db
+      - DB_USER=stockuser
+      - DB_PASSWORD=stockpassword
+      - DB_HOST=db
+      - DB_PORT=3306
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    depends_on:
+      - db
+      - redis
+    volumes:
+      - .:/app
+
+volumes:
+  mysql_data:
+  redis_data:
+  media_files:
+  static_files:

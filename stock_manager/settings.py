@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 from pathlib import Path
+import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -80,15 +81,32 @@ TEMPLATES = [
 WSGI_APPLICATION = "stock_manager.wsgi.application"
 
 
-# Database
+# Database Configuration for MySQL
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
 DATABASES = {
     "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+        "ENGINE": "django.db.backends.mysql",
+        "NAME": os.environ.get('DB_NAME', 'stockmanager_db'),
+        "USER": os.environ.get('DB_USER', 'root'),
+        "PASSWORD": os.environ.get('DB_PASSWORD', ''),
+        "HOST": os.environ.get('DB_HOST', 'localhost'),
+        "PORT": os.environ.get('DB_PORT', '3306'),
+        "OPTIONS": {
+            'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
+            'charset': 'utf8mb4',
+        },
     }
 }
+
+# Fallback to SQLite for development if MySQL is not available
+if os.environ.get('USE_SQLITE', 'False').lower() == 'true':
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": BASE_DIR / "db.sqlite3",
+        }
+    }
 
 
 # Password validation
@@ -115,7 +133,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = "fr-fr"
 
-TIME_ZONE = "Europe/Paris"
+TIME_ZONE = "Africa/Conakry"  # Timezone for Guinea
 
 USE_I18N = True
 
@@ -150,14 +168,122 @@ LOGOUT_REDIRECT_URL = 'login'
 # Email settings for invoice sending
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'  # For development
 # EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'  # For production
-EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_PORT = 587
+EMAIL_HOST = os.environ.get('EMAIL_HOST', 'smtp.gmail.com')
+EMAIL_PORT = int(os.environ.get('EMAIL_PORT', '587'))
 EMAIL_USE_TLS = True
-EMAIL_HOST_USER = 'your-email@gmail.com'
-EMAIL_HOST_PASSWORD = 'your-app-password'
+EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', 'your-email@gmail.com')
+EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', 'your-app-password')
 DEFAULT_FROM_EMAIL = 'StockManager Pro <noreply@stockmanager.com>'
+
+# Logging configuration
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
+            'style': '{',
+        },
+        'simple': {
+            'format': '{levelname} {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        'file': {
+            'level': 'INFO',
+            'class': 'logging.FileHandler',
+            'filename': BASE_DIR / 'logs' / 'stockmanager.log',
+            'formatter': 'verbose',
+        },
+        'console': {
+            'level': 'DEBUG',
+            'class': 'logging.StreamHandler',
+            'formatter': 'simple',
+        },
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['file', 'console'],
+            'level': 'INFO',
+            'propagate': True,
+        },
+        'inventory': {
+            'handlers': ['file', 'console'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+        'billing': {
+            'handlers': ['file', 'console'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+    },
+}
+
+# Create logs directory if it doesn't exist
+os.makedirs(BASE_DIR / 'logs', exist_ok=True)
+
+# Cache configuration for better performance
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'unique-snowflake',
+        'TIMEOUT': 300,
+        'OPTIONS': {
+            'MAX_ENTRIES': 1000,
+        }
+    }
+}
+
+# Session configuration
+SESSION_ENGINE = 'django.contrib.sessions.backends.db'
+SESSION_COOKIE_AGE = 86400  # 24 hours
+SESSION_SAVE_EVERY_REQUEST = True
+
+# Security settings for production
+if not DEBUG:
+    SECURE_BROWSER_XSS_FILTER = True
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    X_FRAME_OPTIONS = 'DENY'
+    SECURE_HSTS_SECONDS = 31536000
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+# Custom settings for business logic
+BUSINESS_SETTINGS = {
+    'DEFAULT_CURRENCY': 'GNF',
+    'DEFAULT_TAX_RATE': 18.0,  # 18% VAT for Guinea
+    'INVOICE_NUMBER_PREFIX': 'INV',
+    'PAYMENT_TERMS_DEFAULT': 30,  # 30 days
+    'LOW_STOCK_MULTIPLIER': 1.5,  # Alert when stock is 1.5x below minimum
+    'BACKUP_FREQUENCY': 'daily',  # daily, weekly, monthly
+    'AUTO_BACKUP': True,
+    'ENABLE_BARCODE_GENERATION': True,
+    'ENABLE_QR_CODES': True,
+    'MAX_UPLOAD_SIZE': 5 * 1024 * 1024,  # 5MB
+}
+
+# File upload settings
+FILE_UPLOAD_MAX_MEMORY_SIZE = 5 * 1024 * 1024  # 5MB
+DATA_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024  # 10MB
+
+# Internationalization and localization
+USE_THOUSAND_SEPARATOR = True
+THOUSAND_SEPARATOR = ' '
+DECIMAL_SEPARATOR = ','
+NUMBER_GROUPING = 3
+
+# Date and time formats
+DATE_FORMAT = 'd/m/Y'
+DATETIME_FORMAT = 'd/m/Y H:i'
+SHORT_DATE_FORMAT = 'd/m/y'
+TIME_FORMAT = 'H:i'
+
+# Custom user model (if needed in future)
+# AUTH_USER_MODEL = 'accounts.User'

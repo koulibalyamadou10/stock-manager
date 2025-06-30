@@ -1,5 +1,19 @@
-from django.urls import path
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
 from . import views
+from .api_views import (
+    ProductViewSet, CategoryViewSet, SupplierViewSet,
+    StockMovementViewSet, StockAlertViewSet, AnalyticsViewSet
+)
+
+# API Router
+router = DefaultRouter()
+router.register(r'products', ProductViewSet)
+router.register(r'categories', CategoryViewSet)
+router.register(r'suppliers', SupplierViewSet)
+router.register(r'movements', StockMovementViewSet)
+router.register(r'alerts', StockAlertViewSet)
+router.register(r'analytics', AnalyticsViewSet, basename='analytics')
 
 app_name = 'inventory'
 
@@ -37,7 +51,7 @@ urlpatterns = [
     # Statistics
     path('statistics/', views.statistics, name='statistics'),
     
-    # API endpoints
+    # API endpoints (legacy)
     path('api/alerts/', views.api_alerts, name='api_alerts'),
     path('api/alerts/<int:alert_id>/resolve/', views.api_resolve_alert, name='api_resolve_alert'),
     path('api/alerts-count/', views.api_alerts_count, name='api_alerts_count'),
@@ -62,4 +76,7 @@ urlpatterns = [
     # Export functionality
     path('export/products/', views.export_products, name='export_products'),
     path('export/movements/', views.export_movements, name='export_movements'),
+    
+    # REST API
+    path('api/v1/', include(router.urls)),
 ]
