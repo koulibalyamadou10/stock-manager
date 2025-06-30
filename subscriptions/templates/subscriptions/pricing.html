@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tarifs - StockManager Pro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-50">
+    <!-- Header -->
+    <header class="bg-white shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center py-6">
+                <div class="flex items-center">
+                    <i class="fas fa-boxes text-blue-600 text-2xl mr-3"></i>
+                    <h1 class="text-2xl font-bold text-gray-900">StockManager Pro</h1>
+                </div>
+                <div class="flex space-x-4">
+                    {% if user.is_authenticated %}
+                        <a href="{% url 'inventory:dashboard' %}" class="text-gray-600 hover:text-gray-900">Tableau de bord</a>
+                        <a href="{% url 'subscriptions:my_subscription' %}" class="text-gray-600 hover:text-gray-900">Mon abonnement</a>
+                        <a href="{% url 'logout' %}" class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700">Déconnexion</a>
+                    {% else %}
+                        <a href="{% url 'login' %}" class="text-gray-600 hover:text-gray-900">Connexion</a>
+                        <a href="{% url 'login' %}" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">S'inscrire</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="bg-gradient-to-br from-blue-600 to-blue-800 text-white py-20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <h1 class="text-4xl md:text-6xl font-bold mb-6">
+                Choisissez votre plan
+            </h1>
+            <p class="text-xl md:text-2xl mb-8 text-blue-100">
+                Des solutions adaptées à chaque type d'entreprise
+            </p>
+        </div>
+    </section>
+
+    <!-- Pricing Plans -->
+    <section class="py-20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                
+                <!-- Plan Gratuit -->
+                <div class="bg-white rounded-2xl shadow-lg border border-gray-200 p-8 relative">
+                    <div class="text-center mb-8">
+                        <h3 class="text-2xl font-bold text-gray-900 mb-2">Gratuit</h3>
+                        <p class="text-gray-600 mb-4">Idéal pour les petits vendeurs ou commerçants débutants</p>
+                        <div class="text-4xl font-bold text-gray-900 mb-2">
+                            0 <span class="text-lg font-normal text-gray-600">GNF</span>
+                        </div>
+                        <p class="text-gray-500">Pour toujours</p>
+                    </div>
+                    
+                    <ul class="space-y-4 mb-8">
+                        {% for feature in plan_features.free %}
+                        <li class="flex items-start">
+                            <i class="fas fa-check text-green-500 mt-1 mr-3"></i>
+                            <span class="text-gray-700">{{ feature }}</span>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    
+                    <a href="{% url 'subscriptions:subscribe' plans.0.id %}" 
+                       class="w-full bg-gray-900 text-white py-3 px-6 rounded-lg font-semibold hover:bg-gray-800 transition-colors duration-200 text-center block">
+                        Commencer gratuitement
+                    </a>
+                </div>
+
+                <!-- Plan Complet -->
+                <div class="bg-white rounded-2xl shadow-xl border-2 border-green-500 p-8 relative transform scale-105">
+                    <div class="absolute -top-4 left-1/2 transform -translate-x-1/2">
+                        <span class="bg-green-500 text-white px-4 py-2 rounded-full text-sm font-semibold">
+                            Recommandé
+                        </span>
+                    </div>
+                    
+                    <div class="text-center mb-8">
+                        <h3 class="text-2xl font-bold text-gray-900 mb-2">Complet</h3>
+                        <p class="text-gray-600 mb-4">Pour les commerces structurés : boutiques, librairies, points de vente</p>
+                        <div class="text-4xl font-bold text-gray-900 mb-2">
+                            80 000 <span class="text-lg font-normal text-gray-600">GNF</span>
+                        </div>
+                        <p class="text-gray-500">par mois</p>
+                    </div>
+                    
+                    <ul class="space-y-4 mb-8">
+                        {% for feature in plan_features.complete %}
+                        <li class="flex items-start">
+                            <i class="fas fa-check text-green-500 mt-1 mr-3"></i>
+                            <span class="text-gray-700">{{ feature }}</span>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    
+                    <a href="{% url 'subscriptions:subscribe' plans.1.id %}" 
+                       class="w-full bg-green-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-green-700 transition-colors duration-200 text-center block">
+                        Choisir l'offre Complet
+                    </a>
+                </div>
+
+                <!-- Plan Premium -->
+                <div class="bg-white rounded-2xl shadow-lg border border-gray-200 p-8 relative">
+                    <div class="text-center mb-8">
+                        <h3 class="text-2xl font-bold text-gray-900 mb-2">Premium</h3>
+                        <p class="text-gray-600 mb-4">Pour les gestionnaires, franchises, pharmacies, salons, garagistes</p>
+                        <div class="text-4xl font-bold text-gray-900 mb-2">
+                            200 000 <span class="text-lg font-normal text-gray-600">GNF</span>
+                        </div>
+                        <p class="text-gray-500">par mois</p>
+                    </div>
+                    
+                    <ul class="space-y-4 mb-8">
+                        {% for feature in plan_features.premium %}
+                        <li class="flex items-start">
+                            <i class="fas fa-check text-blue-500 mt-1 mr-3"></i>
+                            <span class="text-gray-700">{{ feature }}</span>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    
+                    <a href="{% url 'subscriptions:subscribe' plans.2.id %}" 
+                       class="w-full bg-blue-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-blue-700 transition-colors duration-200 text-center block">
+                        Demander une démo
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Comparison -->
+    <section class="bg-gray-100 py-20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl font-bold text-gray-900 mb-4">Comparaison détaillée</h2>
+                <p class="text-xl text-gray-600">Toutes les fonctionnalités en un coup d'œil</p>
+            </div>
+            
+            <div class="bg-white rounded-2xl shadow-lg overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-4 text-left text-sm font-semibold text-gray-900">Fonctionnalités</th>
+                                <th class="px-6 py-4 text-center text-sm font-semibold text-gray-900">Gratuit</th>
+                                <th class="px-6 py-4 text-center text-sm font-semibold text-gray-900">Complet</th>
+                                <th class="px-6 py-4 text-center text-sm font-semibold text-gray-900">Premium</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-200">
+                            <tr>
+                                <td class="px-6 py-4 text-sm text-gray-900">Gestion de stock</td>
+                                <td class="px-6 py-4 text-center"><i class="fas fa-check text-green-500"></i></td>
+                                <td class="px-6 py-4 text-center"><i class="fas fa-check text-green-500"></i></td>
+                                <td class="px-6 py-4 text-center"><i class="fas fa-check text-green-500"></i></td>
+                            </tr>
+                            <tr class="bg-gray-50">
+                                <td class="px-6 py-4 text-sm text-gray-900">Facturation PDF</td>
+                                <td class="px-6 py-4 text-center"><i class="fas fa-times text-red-500"></i></td>
+                                <td class="px-6 py-4 text-center"><i class="fas fa-check text-green-500"></i></td>
+                                <td class="px-6 py-4 text-center"><i class="fas fa-check text-green-500"></i></td>
+                            </tr>
+                            <tr>
+                                <td class="px-6 py-4 text-sm text-gray-900">Multi-utilisateurs</td>
+                                <td class="px-6 py-4 text-center">1</td>
+                                <td class="px-6 py-4 text-center">3</td>
+                                <td class="px-6 py-4 text-center">Illimité</td>
+                            </tr>
+                            <tr class="bg-gray-50">
+                                <td class="px-6 py-4 text-sm text-gray-900">Intelligence Artificielle</td>
+                                <td class="px-6 py-4 text-center"><i class="fas fa-times text-red-500"></i></td>
+                                <td class="px-6 py-4 text-center"><i class="fas fa-times text-red-500"></i></td>
+                                <td class="px-6 py-4 text-center"><i class="fas fa-check text-green-500"></i></td>
+                            </tr>
+                            <tr>
+                                <td class="px-6 py-4 text-sm text-gray-900">Support</td>
+                                <td class="px-6 py-4 text-center text-sm">WhatsApp</td>
+                                <td class="px-6 py-4 text-center text-sm">Standard</td>
+                                <td class="px-6 py-4 text-center text-sm">24h/24</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FAQ Section -->
+    <section class="py-20">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl font-bold text-gray-900 mb-4">Questions fréquentes</h2>
+            </div>
+            
+            <div class="space-y-6">
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-2">Puis-je changer de plan à tout moment ?</h3>
+                    <p class="text-gray-600">Oui, vous pouvez upgrader ou downgrader votre plan à tout moment. Les changements prennent effet immédiatement.</p>
+                </div>
+                
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-2">Y a-t-il une période d'essai ?</h3>
+                    <p class="text-gray-600">Le plan gratuit vous permet de tester les fonctionnalités de base. Pour les plans payants, contactez-nous pour une démonstration.</p>
+                </div>
+                
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-2">Quels moyens de paiement acceptez-vous ?</h3>
+                    <p class="text-gray-600">Nous acceptons les paiements via Lengo Pay, Mobile Money, et virement bancaire.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-gray-900 text-white py-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <div class="flex items-center justify-center mb-6">
+                <i class="fas fa-boxes text-2xl mr-3"></i>
+                <span class="text-xl font-bold">StockManager Pro</span>
+            </div>
+            <p class="text-gray-400 mb-4">Gérez votre stock intelligemment</p>
+            <p class="text-gray-500 text-sm">© 2024 StockManager Pro. Tous droits réservés.</p>
+        </div>
+    </footer>
+</body>
+</html>

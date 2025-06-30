@@ -11,14 +11,15 @@ urlpatterns = [
     # Authentication URLs
     path('accounts/', include('django.contrib.auth.urls')),
     
+    # Subscriptions app URLs (page d'accueil)
+    path('', include('subscriptions.urls')),
+    path('subscriptions/', include('subscriptions.urls')),
+    
     # Inventory app URLs
     path('inventory/', include('inventory.urls')),
     
     # Billing app URLs
     path('billing/', include('billing.urls')),
-    
-    # Redirect root URL to inventory dashboard
-    path('', RedirectView.as_view(url='/inventory/', permanent=True)),
 ]
 
 # Serve media files in development
@@ -27,6 +28,6 @@ if settings.DEBUG:
     urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
 
 # Customize admin site
-admin.site.site_header = 'StockManager Administration'
-admin.site.site_title = 'StockManager Admin'
+admin.site.site_header = 'StockManager Pro Administration'
+admin.site.site_title = 'StockManager Pro Admin'
 admin.site.index_title = 'Tableau de bord administration'

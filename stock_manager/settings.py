@@ -23,6 +23,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'inventory',
     'billing',
+    'subscriptions',  # Nouvelle app pour les abonnements
 ]
 
 MIDDLEWARE = [
@@ -33,6 +34,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'subscriptions.middleware.SubscriptionMiddleware',  # Middleware pour vérifier les abonnements
 ]
 
 ROOT_URLCONF = 'stock_manager.urls'
@@ -80,8 +82,8 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 # Internationalization
-LANGUAGE_CODE = 'en-us'
-TIME_ZONE = 'UTC'
+LANGUAGE_CODE = 'fr-fr'
+TIME_ZONE = 'Africa/Conakry'
 USE_I18N = True
 USE_TZ = True
 
@@ -100,9 +102,9 @@ MEDIA_ROOT = BASE_DIR / 'media'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Login URLs
-LOGIN_URL = '/login/'
-LOGIN_REDIRECT_URL = '/'
-LOGOUT_REDIRECT_URL = '/login/'
+LOGIN_URL = '/accounts/login/'
+LOGIN_REDIRECT_URL = '/subscriptions/'  # Rediriger vers la page de tarification après connexion
+LOGOUT_REDIRECT_URL = '/subscriptions/'
 
 # REST Framework settings
 REST_FRAMEWORK = {
@@ -117,7 +119,7 @@ REST_FRAMEWORK = {
 # Email settings (for development)
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
-# Cache settings (using local memory cache instead of Redis)
+# Cache settings
 CACHES = {
     'default': {
         'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
@@ -132,3 +134,11 @@ SESSION_COOKIE_AGE = 86400  # 24 hours
 SECURE_BROWSER_XSS_FILTER = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
 X_FRAME_OPTIONS = 'DENY'
+
+# Lengo Pay Configuration
+LENGO_PAY_WEBSITE_ID = 'STOCKMANAGER_PRO'
+LENGO_PAY_LICENSE_KEY = os.environ.get('LENGO_PAY_LICENSE_KEY', 'your-license-key-here')
+SITE_URL = os.environ.get('SITE_URL', 'http://localhost:8000')
+
+# Subscription settings
+ENABLE_SUBSCRIPTION_MIDDLEWARE = True

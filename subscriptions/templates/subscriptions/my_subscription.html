@@ -1,0 +1,170 @@
+{% extends 'inventory/base.html' %}
+
+{% block title %}Mon Abonnement - StockManager Pro{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <!-- Page Header -->
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-gray-900">Mon Abonnement</h1>
+        <p class="mt-2 text-gray-600">Gérez votre abonnement et consultez votre utilisation</p>
+    </div>
+
+    <!-- Current Subscription -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
+        <div class="flex justify-between items-start mb-6">
+            <div>
+                <h3 class="text-xl font-semibold text-gray-900">Plan {{ subscription.plan.name }}</h3>
+                <p class="text-gray-600">{{ subscription.plan.description }}</p>
+            </div>
+            <div class="text-right">
+                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium
+                    {% if subscription.status == 'active' %}bg-green-100 text-green-800
+                    {% elif subscription.status == 'expired' %}bg-red-100 text-red-800
+                    {% elif subscription.status == 'cancelled' %}bg-gray-100 text-gray-800
+                    {% else %}bg-yellow-100 text-yellow-800{% endif %}">
+                    {{ subscription.get_status_display }}
+                </span>
+            </div>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+            <div class="text-center p-4 bg-gray-50 rounded-lg">
+                <div class="text-2xl font-bold text-gray-900">{{ subscription.plan.price|floatformat:0 }}</div>
+                <div class="text-sm text-gray-600">GNF / mois</div>
+            </div>
+            <div class="text-center p-4 bg-gray-50 rounded-lg">
+                <div class="text-2xl font-bold text-gray-900">{{ subscription.days_remaining }}</div>
+                <div class="text-sm text-gray-600">jours restants</div>
+            </div>
+            <div class="text-center p-4 bg-gray-50 rounded-lg">
+                <div class="text-2xl font-bold text-gray-900">{{ subscription.end_date|date:"d/m/Y" }}</div>
+                <div class="text-sm text-gray-600">date d'expiration</div>
+            </div>
+        </div>
+        
+        <div class="flex space-x-4">
+            <a href="{% url 'subscriptions:pricing' %}" 
+               class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors duration-200">
+                Changer de plan
+            </a>
+            {% if subscription.status == 'active' %}
+                <form method="post" action="{% url 'subscriptions:cancel_subscription' %}" class="inline">
+                    {% csrf_token %}
+                    <button type="submit" 
+                            onclick="return confirm('Êtes-vous sûr de vouloir annuler votre abonnement ?')"
+                            class="bg-red-600 text-white px-6 py-2 rounded-lg hover:bg-red-700 transition-colors duration-200">
+                        Annuler l'abonnement
+                    </button>
+                </form>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Usage Statistics -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
+        <h3 class="text-lg font-semibold text-gray-900 mb-6">Utilisation actuelle</h3>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <!-- Products Usage -->
+            <div class="text-center">
+                <div class="text-2xl font-bold text-gray-900 mb-1">{{ usage.products_count }}</div>
+                <div class="text-sm text-gray-600 mb-2">Produits</div>
+                {% if subscription.plan.max_products %}
+                    <div class="w-full bg-gray-200 rounded-full h-2">
+                        <div class="bg-blue-600 h-2 rounded-full" 
+                             style="width: {{ usage.products_count|div:subscription.plan.max_products|mul:100 }}%"></div>
+                    </div>
+                    <div class="text-xs text-gray-500 mt-1">{{ subscription.plan.max_products }} max</div>
+                {% else %}
+                    <div class="text-xs text-green-600">Illimité</div>
+                {% endif %}
+            </div>
+            
+            <!-- Invoices Usage -->
+            <div class="text-center">
+                <div class="text-2xl font-bold text-gray-900 mb-1">{{ usage.invoices_this_month }}</div>
+                <div class="text-sm text-gray-600 mb-2">Factures ce mois</div>
+                {% if subscription.plan.max_invoices_per_month %}
+                    <div class="w-full bg-gray-200 rounded-full h-2">
+                        <div class="bg-green-600 h-2 rounded-full" 
+                             style="width: {{ usage.invoices_this_month|div:subscription.plan.max_invoices_per_month|mul:100 }}%"></div>
+                    </div>
+                    <div class="text-xs text-gray-500 mt-1">{{ subscription.plan.max_invoices_per_month }} max</div>
+                {% else %}
+                    <div class="text-xs text-green-600">Illimité</div>
+                {% endif %}
+            </div>
+            
+            <!-- Users Usage -->
+            <div class="text-center">
+                <div class="text-2xl font-bold text-gray-900 mb-1">{{ usage.users_count }}</div>
+                <div class="text-sm text-gray-600 mb-2">Utilisateurs</div>
+                {% if subscription.plan.max_users %}
+                    <div class="w-full bg-gray-200 rounded-full h-2">
+                        <div class="bg-purple-600 h-2 rounded-full" 
+                             style="width: {{ usage.users_count|div:subscription.plan.max_users|mul:100 }}%"></div>
+                    </div>
+                    <div class="text-xs text-gray-500 mt-1">{{ subscription.plan.max_users }} max</div>
+                {% else %}
+                    <div class="text-xs text-green-600">Illimité</div>
+                {% endif %}
+            </div>
+            
+            <!-- API Usage -->
+            <div class="text-center">
+                <div class="text-2xl font-bold text-gray-900 mb-1">{{ usage.api_calls_this_month }}</div>
+                <div class="text-sm text-gray-600 mb-2">Appels API</div>
+                {% if subscription.plan.has_api_access %}
+                    <div class="text-xs text-green-600">Disponible</div>
+                {% else %}
+                    <div class="text-xs text-gray-500">Non disponible</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Payments -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <h3 class="text-lg font-semibold text-gray-900 mb-6">Historique des paiements</h3>
+        
+        {% if recent_payments %}
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead>
+                        <tr class="border-b border-gray-200">
+                            <th class="text-left py-3 px-4 font-semibold text-gray-900">Date</th>
+                            <th class="text-left py-3 px-4 font-semibold text-gray-900">Montant</th>
+                            <th class="text-left py-3 px-4 font-semibold text-gray-900">Méthode</th>
+                            <th class="text-left py-3 px-4 font-semibold text-gray-900">Statut</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for payment in recent_payments %}
+                        <tr class="border-b border-gray-100">
+                            <td class="py-3 px-4 text-gray-900">{{ payment.created_at|date:"d/m/Y H:i" }}</td>
+                            <td class="py-3 px-4 text-gray-900">{{ payment.amount|floatformat:0 }} {{ payment.currency }}</td>
+                            <td class="py-3 px-4 text-gray-600">{{ payment.get_payment_method_display }}</td>
+                            <td class="py-3 px-4">
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                                    {% if payment.status == 'completed' %}bg-green-100 text-green-800
+                                    {% elif payment.status == 'failed' %}bg-red-100 text-red-800
+                                    {% elif payment.status == 'cancelled' %}bg-gray-100 text-gray-800
+                                    {% else %}bg-yellow-100 text-yellow-800{% endif %}">
+                                    {{ payment.get_status_display }}
+                                </span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="text-center py-8">
+                <i class="fas fa-receipt text-gray-400 text-3xl mb-3"></i>
+                <p class="text-gray-500">Aucun paiement enregistré</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
