@@ -28,15 +28,15 @@ def billing_dashboard(request):
     # Statistiques générales
     stats = get_invoice_statistics()
     
-    # Factures récentes
+    # Factures récentes - limité à 10 pour performance
     recent_invoices = Invoice.objects.select_related('customer').order_by('-created_at')[:10]
     
-    # Factures en retard
+    # Factures en retard - limité à 5 pour performance
     overdue_invoices = Invoice.objects.filter(
         status='overdue'
     ).select_related('customer').order_by('due_date')[:5]
     
-    # Paiements récents
+    # Paiements récents - limité à 10 pour performance
     recent_payments = Payment.objects.select_related(
         'invoice', 'invoice__customer'
     ).order_by('-created_at')[:10]
@@ -100,7 +100,7 @@ def customer_list(request):
             Q(phone__icontains=search)
         )
     
-    # Pagination
+    # Pagination - optimized to 25 per page
     paginator = Paginator(customers, 25)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
@@ -177,13 +177,24 @@ def invoice_list(request):
     if end_date:
         invoices = invoices.filter(issue_date__lte=end_date)
     
-    # Pagination
+    # Pagination - optimized to 25 per page
     paginator = Paginator(invoices, 25)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
     
-    # Get customers for filter
+    # Get customers for filter - limit to active only
     customers = Customer.objects.filter(is_active=True).order_by('name')
+    
+    # Build query params for pagination links
+    query_params = ''
+    if status:
+        query_params += f'&status={status}'
+    if customer_id:
+        query_params += f'&customer={customer_id}'
+    if start_date:
+        query_params += f'&start_date={start_date}'
+    if end_date:
+        query_params += f'&end_date={end_date}'
     
     context = {
         'invoices': page_obj,
@@ -194,6 +205,7 @@ def invoice_list(request):
         'end_date': end_date,
         'is_paginated': page_obj.has_other_pages(),
         'page_obj': page_obj,
+        'query_params': query_params,
     }
     return render(request, 'billing/invoice_list.html', context)
 
@@ -463,10 +475,19 @@ def payment_list(request):
     if payment_method:
         payments = payments.filter(payment_method=payment_method)
     
-    # Pagination
+    # Pagination - optimized to 25 per page
     paginator = Paginator(payments, 25)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
+    
+    # Build query params for pagination links
+    query_params = ''
+    if start_date:
+        query_params += f'&start_date={start_date}'
+    if end_date:
+        query_params += f'&end_date={end_date}'
+    if payment_method:
+        query_params += f'&payment_method={payment_method}'
     
     context = {
         'payments': page_obj,
@@ -476,6 +497,7 @@ def payment_list(request):
         'payment_methods': Payment.PAYMENT_METHODS,
         'is_paginated': page_obj.has_other_pages(),
         'page_obj': page_obj,
+        'query_params': query_params,
     }
     return render(request, 'billing/payment_list.html', context)
 
@@ -524,7 +546,18 @@ def payment_delete(request, pk):
 def template_list(request):
     """Liste des modèles de factures"""
     templates = InvoiceTemplate.objects.order_by('-is_default', 'name')
-    return render(request, 'billing/template_list.html', {'templates': templates})
+    
+    # Pagination
+    paginator = Paginator(templates, 10)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    context = {
+        'templates': page_obj,
+        'is_paginated': page_obj.has_other_pages(),
+        'page_obj': page_obj,
+    }
+    return render(request, 'billing/template_list.html', context)
 
 @login_required
 def template_add(request):
@@ -584,7 +617,7 @@ def billing_reports(request):
     # Get statistics
     stats = get_invoice_statistics(start_date, end_date)
     
-    # Top customers
+    # Top customers - limit to 10 for performance
     top_customers = Customer.objects.filter(
         invoices__issue_date__range=[start_date, end_date],
         invoices__status='paid'
@@ -621,7 +654,7 @@ def billing_reports(request):
 
 @login_required
 def export_invoices(request):
-    """Exporter les factures en CSV"""
+    """Exporter les factures en CSV."""
     response = HttpResponse(content_type='text/csv')
     response['Content-Disposition'] = 'attachment; filename=factures.csv'
     
@@ -631,6 +664,7 @@ def export_invoices(request):
         'Statut', 'Sous-total', 'TVA', 'Total', 'Référence'
     ])
     
+    # Limit to 1000 invoices for performance
     invoices = Invoice.objects.select_related('customer').order_by('-created_at')[:1000]
     for invoice in invoices:
         writer.writerow([
@@ -643,6 +677,129 @@ def export_invoices(request):
             invoice.tax_amount,
             invoice.total_amount,
             invoice.reference or ''
+        ])
+    
+    return response
+
+@login_required
+def export_reports(request):
+    """Export reports in various formats"""
+    format_type = request.GET.get('format', 'excel')
+    start_date = request.GET.get('start_date')
+    end_date = request.GET.get('end_date')
+    
+    if start_date:
+        start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
+    if end_date:
+        end_date = datetime.strptime(end_date, '%Y-%m-%d').date()
+    
+    if format_type == 'excel':
+        return export_excel_report(start_date, end_date)
+    elif format_type == 'pdf':
+        return export_pdf_report(start_date, end_date)
+    else:
+        return export_csv_report(start_date, end_date)
+
+def export_excel_report(start_date, end_date):
+    """Export detailed Excel report"""
+    output = BytesIO()
+    workbook = xlsxwriter.Workbook(output)
+    
+    # Create worksheets
+    summary_sheet = workbook.add_worksheet('Résumé')
+    invoices_sheet = workbook.add_worksheet('Factures')
+    payments_sheet = workbook.add_worksheet('Paiements')
+    customers_sheet = workbook.add_worksheet('Clients')
+    
+    # Define formats
+    header_format = workbook.add_format({
+        'bold': True,
+        'bg_color': '#3b82f6',
+        'font_color': 'white',
+        'border': 1
+    })
+    
+    currency_format = workbook.add_format({'num_format': '#,##0'})
+    date_format = workbook.add_format({'num_format': 'dd/mm/yyyy'})
+    
+    # Summary sheet
+    stats = get_invoice_statistics(start_date, end_date)
+    
+    summary_sheet.write('A1', 'Rapport de Facturation', header_format)
+    summary_sheet.write('A3', 'Période:', header_format)
+    summary_sheet.write('B3', f"{start_date} - {end_date}" if start_date and end_date else "Toutes périodes")
+    
+    summary_sheet.write('A5', 'Métrique', header_format)
+    summary_sheet.write('B5', 'Valeur', header_format)
+    
+    metrics = [
+        ('Total Factures', stats['total_invoices']),
+        ('Chiffre d\'affaires', stats['total_amount']),
+        ('Factures Payées', stats['paid_invoices']),
+        ('Montant Encaissé', stats['paid_amount']),
+        ('Factures en Attente', stats['pending_invoices']),
+        ('Montant en Attente', stats['pending_amount']),
+    ]
+    
+    for i, (metric, value) in enumerate(metrics, 6):
+        summary_sheet.write(f'A{i}', metric)
+        if 'Montant' in metric or 'affaires' in metric:
+            summary_sheet.write(f'B{i}', value, currency_format)
+        else:
+            summary_sheet.write(f'B{i}', value)
+    
+    # Invoices sheet - limit to 1000 for performance
+    invoices = Invoice.objects.select_related('customer').order_by('-created_at')
+    if start_date and end_date:
+        invoices = invoices.filter(issue_date__range=[start_date, end_date])
+    
+    invoice_headers = ['Numéro', 'Client', 'Date Émission', 'Date Échéance', 'Statut', 'Total']
+    for col, header in enumerate(invoice_headers):
+        invoices_sheet.write(0, col, header, header_format)
+    
+    for row, invoice in enumerate(invoices[:1000], 1):
+        invoices_sheet.write(row, 0, invoice.invoice_number)
+        invoices_sheet.write(row, 1, invoice.customer.name)
+        invoices_sheet.write(row, 2, invoice.issue_date, date_format)
+        invoices_sheet.write(row, 3, invoice.due_date, date_format)
+        invoices_sheet.write(row, 4, invoice.get_status_display())
+        invoices_sheet.write(row, 5, float(invoice.total_amount), currency_format)
+    
+    # Auto-adjust column widths
+    for sheet in [summary_sheet, invoices_sheet, payments_sheet, customers_sheet]:
+        sheet.set_column('A:Z', 15)
+    
+    workbook.close()
+    output.seek(0)
+    
+    response = HttpResponse(
+        output.read(),
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+    response['Content-Disposition'] = 'attachment; filename=rapport_facturation.xlsx'
+    return response
+
+def export_csv_report(start_date, end_date):
+    """Export CSV report"""
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename=rapport_facturation.csv'
+    
+    writer = csv.writer(response)
+    writer.writerow(['Numéro', 'Client', 'Date Émission', 'Date Échéance', 'Statut', 'Total'])
+    
+    # Limit to 1000 invoices for performance
+    invoices = Invoice.objects.select_related('customer').order_by('-created_at')
+    if start_date and end_date:
+        invoices = invoices.filter(issue_date__range=[start_date, end_date])
+    
+    for invoice in invoices[:1000]:
+        writer.writerow([
+            invoice.invoice_number,
+            invoice.customer.name,
+            invoice.issue_date.strftime('%Y-%m-%d'),
+            invoice.due_date.strftime('%Y-%m-%d'),
+            invoice.get_status_display(),
+            float(invoice.total_amount)
         ])
     
     return response
@@ -764,6 +921,7 @@ def api_top_customers(request):
             invoices__status='paid'
         )
     
+    # Limit to top 10 for performance
     customers = customers.annotate(
         total_amount=Sum('invoices__total_amount', filter=Q(invoices__status='paid'))
     ).order_by('-total_amount')[:10]
@@ -787,7 +945,7 @@ def api_top_products(request):
         start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
         end_date = datetime.strptime(end_date, '%Y-%m-%d').date()
         
-        # Get products sold in invoice items
+        # Get products sold in invoice items - limit to top 10 for performance
         products = products.filter(
             invoiceitem__invoice__issue_date__range=[start_date, end_date],
             invoiceitem__invoice__status='paid'
@@ -813,7 +971,7 @@ def api_top_products(request):
             'avg_price': float(product.avg_price or 0)
         })
     
-    return data
+    return JsonResponse(data, safe=False)
 
 @login_required
 def api_payment_methods(request):
@@ -889,125 +1047,3 @@ def api_monthly_comparison(request):
         'revenue': revenue_data,
         'invoices': invoice_data
     })
-
-@login_required
-def export_reports(request):
-    """Export reports in various formats"""
-    format_type = request.GET.get('format', 'excel')
-    start_date = request.GET.get('start_date')
-    end_date = request.GET.get('end_date')
-    
-    if start_date:
-        start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
-    if end_date:
-        end_date = datetime.strptime(end_date, '%Y-%m-%d').date()
-    
-    if format_type == 'excel':
-        return export_excel_report(start_date, end_date)
-    elif format_type == 'pdf':
-        return export_pdf_report(start_date, end_date)
-    else:
-        return export_csv_report(start_date, end_date)
-
-def export_excel_report(start_date, end_date):
-    """Export detailed Excel report"""
-    output = BytesIO()
-    workbook = xlsxwriter.Workbook(output)
-    
-    # Create worksheets
-    summary_sheet = workbook.add_worksheet('Résumé')
-    invoices_sheet = workbook.add_worksheet('Factures')
-    payments_sheet = workbook.add_worksheet('Paiements')
-    customers_sheet = workbook.add_worksheet('Clients')
-    
-    # Define formats
-    header_format = workbook.add_format({
-        'bold': True,
-        'bg_color': '#3b82f6',
-        'font_color': 'white',
-        'border': 1
-    })
-    
-    currency_format = workbook.add_format({'num_format': '#,##0'})
-    date_format = workbook.add_format({'num_format': 'dd/mm/yyyy'})
-    
-    # Summary sheet
-    stats = get_invoice_statistics(start_date, end_date)
-    
-    summary_sheet.write('A1', 'Rapport de Facturation', header_format)
-    summary_sheet.write('A3', 'Période:', header_format)
-    summary_sheet.write('B3', f"{start_date} - {end_date}" if start_date and end_date else "Toutes périodes")
-    
-    summary_sheet.write('A5', 'Métrique', header_format)
-    summary_sheet.write('B5', 'Valeur', header_format)
-    
-    metrics = [
-        ('Total Factures', stats['total_invoices']),
-        ('Chiffre d\'affaires', stats['total_amount']),
-        ('Factures Payées', stats['paid_invoices']),
-        ('Montant Encaissé', stats['paid_amount']),
-        ('Factures en Attente', stats['pending_invoices']),
-        ('Montant en Attente', stats['pending_amount']),
-    ]
-    
-    for i, (metric, value) in enumerate(metrics, 6):
-        summary_sheet.write(f'A{i}', metric)
-        if 'Montant' in metric or 'affaires' in metric:
-            summary_sheet.write(f'B{i}', value, currency_format)
-        else:
-            summary_sheet.write(f'B{i}', value)
-    
-    # Invoices sheet
-    invoices = Invoice.objects.select_related('customer').order_by('-created_at')
-    if start_date and end_date:
-        invoices = invoices.filter(issue_date__range=[start_date, end_date])
-    
-    invoice_headers = ['Numéro', 'Client', 'Date Émission', 'Date Échéance', 'Statut', 'Total']
-    for col, header in enumerate(invoice_headers):
-        invoices_sheet.write(0, col, header, header_format)
-    
-    for row, invoice in enumerate(invoices[:1000], 1):
-        invoices_sheet.write(row, 0, invoice.invoice_number)
-        invoices_sheet.write(row, 1, invoice.customer.name)
-        invoices_sheet.write(row, 2, invoice.issue_date, date_format)
-        invoices_sheet.write(row, 3, invoice.due_date, date_format)
-        invoices_sheet.write(row, 4, invoice.get_status_display())
-        invoices_sheet.write(row, 5, float(invoice.total_amount), currency_format)
-    
-    # Auto-adjust column widths
-    for sheet in [summary_sheet, invoices_sheet, payments_sheet, customers_sheet]:
-        sheet.set_column('A:Z', 15)
-    
-    workbook.close()
-    output.seek(0)
-    
-    response = HttpResponse(
-        output.read(),
-        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-    )
-    response['Content-Disposition'] = 'attachment; filename=rapport_facturation.xlsx'
-    return response
-
-def export_csv_report(start_date, end_date):
-    """Export CSV report"""
-    response = HttpResponse(content_type='text/csv')
-    response['Content-Disposition'] = 'attachment; filename=rapport_facturation.csv'
-    
-    writer = csv.writer(response)
-    writer.writerow(['Numéro', 'Client', 'Date Émission', 'Date Échéance', 'Statut', 'Total'])
-    
-    invoices = Invoice.objects.select_related('customer').order_by('-created_at')
-    if start_date and end_date:
-        invoices = invoices.filter(issue_date__range=[start_date, end_date])
-    
-    for invoice in invoices[:1000]:
-        writer.writerow([
-            invoice.invoice_number,
-            invoice.customer.name,
-            invoice.issue_date.strftime('%Y-%m-%d'),
-            invoice.due_date.strftime('%Y-%m-%d'),
-            invoice.get_status_display(),
-            float(invoice.total_amount)
-        ])
-    
-    return response

@@ -249,6 +249,7 @@ def api_seasonal_trends(request):
                 'product_id': product.id,
                 'product_name': product.name,
                 'current_stock': product.quantity,
+                'minimum_stock': product.minimum_stock,
                 'recommended_quantity': int(recommended_quantity),
                 'estimated_cost': recommended_quantity * product.cost_price,
                 'urgency': urgency,
@@ -721,7 +722,7 @@ def product_list(request):
     elif stock_status == 'out':
         products = products.filter(quantity=0)
     
-    # Pagination
+    # Pagination - optimized to 25 items per page
     paginator = Paginator(products, 25)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
@@ -744,7 +745,7 @@ def alerts_view(request):
     if status:
         alerts = alerts.filter(status=status)
     
-    # Pagination
+    # Pagination - optimized to 20 items per page
     paginator = Paginator(alerts, 20)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
@@ -761,7 +762,18 @@ def alerts_view(request):
 @login_required
 def category_list(request):
     categories = Category.objects.filter(is_active=True)
-    return render(request, 'inventory/category_list.html', {'categories': categories})
+    
+    # Pagination
+    paginator = Paginator(categories, 20)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    context = {
+        'categories': page_obj,
+        'is_paginated': page_obj.has_other_pages(),
+        'page_obj': page_obj,
+    }
+    return render(request, 'inventory/category_list.html', context)
 
 @login_required
 def category_add(request):
@@ -888,7 +900,7 @@ def stock_history(request):
     start_date = request.GET.get('start_date')
     end_date = request.GET.get('end_date')
 
-    # Base queryset
+    # Base queryset with select_related for optimization
     movements = StockMovement.objects.select_related('product', 'user').order_by('-date')
 
     # Apply filters
@@ -908,13 +920,24 @@ def stock_history(request):
     total_value = movements.aggregate(
         value=Sum('total_value'))['value'] or 0
 
-    # Pagination
+    # Pagination - optimized to 25 items per page
     paginator = Paginator(movements, 25)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
-    # Get all products for the filter dropdown
-    products = Product.objects.filter(is_active=True)
+    # Get all products for the filter dropdown - limit to active only
+    products = Product.objects.filter(is_active=True).order_by('name')
+
+    # Build query params for pagination links
+    query_params = ''
+    if product_id:
+        query_params += f'&product={product_id}'
+    if movement_type:
+        query_params += f'&movement_type={movement_type}'
+    if start_date:
+        query_params += f'&start_date={start_date}'
+    if end_date:
+        query_params += f'&end_date={end_date}'
 
     context = {
         'movements': page_obj,
@@ -923,7 +946,7 @@ def stock_history(request):
         'total_entries': total_entries,
         'total_exits': total_exits,
         'total_value': total_value,
-        'query_params': request.GET.urlencode(),
+        'query_params': query_params,
         'is_paginated': page_obj.has_other_pages(),
         'page_obj': page_obj,
     }
@@ -933,7 +956,28 @@ def stock_history(request):
 @login_required
 def supplier_list(request):
     suppliers = Supplier.objects.filter(is_active=True)
-    return render(request, 'inventory/supplier_list.html', {'suppliers': suppliers})
+    
+    # Search functionality
+    search = request.GET.get('search', '')
+    if search:
+        suppliers = suppliers.filter(
+            Q(name__icontains=search) | 
+            Q(email__icontains=search) | 
+            Q(phone__icontains=search)
+        )
+    
+    # Pagination
+    paginator = Paginator(suppliers, 20)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    context = {
+        'suppliers': page_obj,
+        'search': search,
+        'is_paginated': page_obj.has_other_pages(),
+        'page_obj': page_obj,
+    }
+    return render(request, 'inventory/supplier_list.html', context)
 
 @login_required
 def supplier_add(request):
@@ -1052,7 +1096,7 @@ def statistics(request):
     low_stock_count = low_stock_products.count()
     total_products = Product.objects.filter(is_active=True).count()
 
-    # Most moved products
+    # Most moved products - limit to top 10 for performance
     most_moved_products = Product.objects.filter(is_active=True).annotate(
         total_movements=Count('movements', filter=Q(movements__date__range=[start_date, end_date]))
     ).order_by('-total_movements')[:10]
@@ -1086,8 +1130,8 @@ def export_products(request):
     for col, header in enumerate(headers):
         worksheet.write(0, col, header)
 
-    # Write data
-    products = Product.objects.select_related('category').filter(is_active=True)
+    # Write data - limit to 1000 products for performance
+    products = Product.objects.select_related('category').filter(is_active=True)[:1000]
     for row, product in enumerate(products, 1):
         worksheet.write(row, 0, product.sku)
         worksheet.write(row, 1, product.name)
@@ -1117,6 +1161,7 @@ def export_movements(request):
     writer = csv.writer(response)
     writer.writerow(['Date', 'Produit', 'SKU', 'Type', 'Quantité', 'Prix unitaire', 'Total', 'Utilisateur'])
 
+    # Limit to 1000 movements for performance
     movements = StockMovement.objects.select_related('product', 'user').order_by('-date')[:1000]
     for movement in movements:
         writer.writerow([
