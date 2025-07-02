@@ -11,8 +11,10 @@ urlpatterns = [
     # Authentication URLs
     path('accounts/', include('django.contrib.auth.urls')),
     
-    # Subscriptions app URLs (page d'accueil)
-    path('', include('subscriptions.urls')),
+    # Landing page (site vitrine) - page d'accueil
+    path('', include('landing.urls')),
+    
+    # Subscriptions app URLs
     path('subscriptions/', include('subscriptions.urls')),
     
     # Inventory app URLs

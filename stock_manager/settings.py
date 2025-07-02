@@ -21,9 +21,10 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
+    'landing',  # Nouvelle app pour le site vitrine
     'inventory',
     'billing',
-    'subscriptions',  # Nouvelle app pour les abonnements
+    'subscriptions',  # App pour les abonnements
 ]
 
 MIDDLEWARE = [
@@ -104,7 +105,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # Login URLs
 LOGIN_URL = '/accounts/login/'
 LOGIN_REDIRECT_URL = '/subscriptions/'  # Rediriger vers la page de tarification après connexion
-LOGOUT_REDIRECT_URL = '/subscriptions/'
+LOGOUT_REDIRECT_URL = '/'  # Rediriger vers la page d'accueil après déconnexion
 
 # REST Framework settings
 REST_FRAMEWORK = {
