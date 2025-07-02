@@ -16,6 +16,13 @@
             <div>
                 <h3 class="text-xl font-semibold text-gray-900">Plan {{ subscription.plan.name }}</h3>
                 <p class="text-gray-600">{{ subscription.plan.description }}</p>
+                
+                {% if subscription.business_type %}
+                <div class="mt-2 inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+                    <i class="{{ subscription.business_type.icon }} mr-2"></i>
+                    {{ subscription.business_type.name }}
+                </div>
+                {% endif %}
             </div>
             <div class="text-right">
                 <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium
@@ -42,6 +49,27 @@
                 <div class="text-sm text-gray-600">date d'expiration</div>
             </div>
         </div>
+        
+        {% if subscription.business_type.has_specific_features %}
+        <div class="mb-6 p-4 bg-blue-50 rounded-lg">
+            <h4 class="font-semibold text-blue-800 mb-2">
+                <i class="fas fa-star mr-2"></i>
+                Fonctionnalités spécifiques pour {{ subscription.business_type.name }}
+            </h4>
+            <ul class="space-y-1 text-sm text-blue-700">
+                {% for feature in subscription.business_type.specific_features %}
+                    <li class="flex items-start">
+                        <i class="fas fa-check-circle mt-1 mr-2"></i>
+                        {{ feature }}
+                    </li>
+                {% endfor %}
+            </ul>
+            <p class="text-xs text-blue-600 mt-2">
+                <i class="fas fa-info-circle mr-1"></i>
+                Ces fonctionnalités seront disponibles dans les prochaines mises à jour.
+            </p>
+        </div>
+        {% endif %}
         
         <div class="flex space-x-4">
             <a href="{% url 'subscriptions:pricing' %}" 

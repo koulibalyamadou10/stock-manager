@@ -38,12 +38,38 @@
         </div>
     </div>
 
+    <!-- Business Type Selection -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
+        <h3 class="text-lg font-semibold text-gray-900 mb-6">Type d'entreprise</h3>
+        
+        <form method="post" id="businessTypeForm">
+            {% csrf_token %}
+            <div class="mb-6">
+                <label for="business_type" class="block text-sm font-medium text-gray-700 mb-2">
+                    Sélectionnez votre type d'entreprise *
+                </label>
+                <select id="business_type" name="business_type" required
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent">
+                    <option value="">Sélectionnez votre secteur d'activité</option>
+                    {% for business_type in business_types %}
+                        <option value="{{ business_type.id }}">{{ business_type.name }}</option>
+                    {% endfor %}
+                </select>
+                <p class="text-sm text-gray-500 mt-2">
+                    <i class="fas fa-info-circle mr-1"></i>
+                    Cela nous permettra d'adapter notre solution à vos besoins spécifiques.
+                </p>
+            </div>
+        </form>
+    </div>
+
     <!-- Payment Form -->
     <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
         <h3 class="text-lg font-semibold text-gray-900 mb-6">Méthode de paiement</h3>
         
         <form method="post">
             {% csrf_token %}
+            <input type="hidden" name="business_type" id="selected_business_type" value="">
             
             {% if plan.plan_type == 'free' %}
                 <div class="text-center py-8">
@@ -120,4 +146,15 @@
         </form>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Transférer la valeur du type d'entreprise au formulaire de paiement
+    document.getElementById('businessTypeForm').addEventListener('change', function() {
+        const businessTypeSelect = document.getElementById('business_type');
+        const selectedBusinessType = document.getElementById('selected_business_type');
+        selectedBusinessType.value = businessTypeSelect.value;
+    });
+</script>
 {% endblock %}

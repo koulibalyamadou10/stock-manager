@@ -6,10 +6,12 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 from django.utils.decorators import method_decorator
 from django.conf import settings
+from django.utils import timezone
 import json
 import requests
 import base64
-from .models import Plan, Subscription, Payment, UsageLimit
+from datetime import timedelta
+from .models import Plan, Subscription, Payment, UsageLimit, BusinessType
 from .services import LengoPayService
 
 def pricing_page(request):
@@ -61,6 +63,7 @@ def pricing_page(request):
 def subscribe(request, plan_id):
     """Souscrire à un plan"""
     plan = get_object_or_404(Plan, id=plan_id, is_active=True)
+    business_types = BusinessType.objects.filter(is_active=True).order_by('name')
     
     # Vérifier si l'utilisateur a déjà un abonnement
     try:
@@ -73,16 +76,28 @@ def subscribe(request, plan_id):
     
     if request.method == 'POST':
         payment_method = request.POST.get('payment_method', 'lengo_pay')
+        business_type_id = request.POST.get('business_type')
+        
+        # Vérifier si un type d'entreprise a été sélectionné
+        business_type = None
+        if business_type_id:
+            try:
+                business_type = BusinessType.objects.get(id=business_type_id)
+            except BusinessType.DoesNotExist:
+                pass
         
         # Créer ou mettre à jour l'abonnement
         if subscription:
             subscription.plan = plan
             subscription.status = 'pending'
+            if business_type:
+                subscription.business_type = business_type
             subscription.save()
         else:
             subscription = Subscription.objects.create(
                 user=request.user,
                 plan=plan,
+                business_type=business_type,
                 status='pending',
                 start_date=timezone.now(),
                 end_date=timezone.now() + timedelta(days=30)
@@ -120,6 +135,7 @@ def subscribe(request, plan_id):
     context = {
         'plan': plan,
         'subscription': subscription,
+        'business_types': business_types,
     }
     return render(request, 'subscriptions/subscribe.html', context)
 

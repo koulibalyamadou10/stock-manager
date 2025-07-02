@@ -33,6 +33,38 @@ class Plan(models.Model):
     def __str__(self):
         return f"{self.name} - {self.price} GNF"
 
+class BusinessType(models.Model):
+    """Modèle pour les différents types d'entreprises"""
+    BUSINESS_TYPES = [
+        ('retail', 'Commerce de détail / Boutique'),
+        ('pharmacy', 'Pharmacie'),
+        ('restaurant', 'Restaurant / Alimentation'),
+        ('electronics', 'Électronique'),
+        ('fashion', 'Mode / Vêtements'),
+        ('automotive', 'Automobile / Garage'),
+        ('beauty', 'Beauté / Salon'),
+        ('construction', 'Construction / Matériaux'),
+        ('wholesale', 'Commerce de gros'),
+        ('other', 'Autre'),
+    ]
+    
+    type = models.CharField(max_length=20, choices=BUSINESS_TYPES, unique=True, verbose_name="Type d'entreprise")
+    name = models.CharField(max_length=100, verbose_name="Nom")
+    description = models.TextField(blank=True, verbose_name="Description")
+    icon = models.CharField(max_length=50, default="fas fa-store", verbose_name="Icône Font Awesome")
+    has_specific_features = models.BooleanField(default=False, verbose_name="Fonctionnalités spécifiques")
+    specific_features = models.JSONField(default=list, blank=True, verbose_name="Fonctionnalités spécifiques")
+    is_active = models.BooleanField(default=True, verbose_name="Actif")
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        verbose_name = "Type d'entreprise"
+        verbose_name_plural = "Types d'entreprises"
+        ordering = ['name']
+    
+    def __str__(self):
+        return self.name
+
 class Subscription(models.Model):
     STATUS_CHOICES = [
         ('active', 'Actif'),
@@ -43,6 +75,7 @@ class Subscription(models.Model):
     
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='subscription')
     plan = models.ForeignKey(Plan, on_delete=models.CASCADE, verbose_name="Plan")
+    business_type = models.ForeignKey(BusinessType, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Type d'entreprise")
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending', verbose_name="Statut")
     start_date = models.DateTimeField(verbose_name="Date de début")
     end_date = models.DateTimeField(verbose_name="Date de fin")

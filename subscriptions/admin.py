@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Plan, Subscription, Payment, UsageLimit
+from .models import Plan, Subscription, Payment, UsageLimit, BusinessType
 
 @admin.register(Plan)
 class PlanAdmin(admin.ModelAdmin):
@@ -8,10 +8,17 @@ class PlanAdmin(admin.ModelAdmin):
     search_fields = ('name', 'description')
     ordering = ('price',)
 
+@admin.register(BusinessType)
+class BusinessTypeAdmin(admin.ModelAdmin):
+    list_display = ('name', 'type', 'has_specific_features', 'is_active')
+    list_filter = ('has_specific_features', 'is_active')
+    search_fields = ('name', 'description')
+    ordering = ('name',)
+
 @admin.register(Subscription)
 class SubscriptionAdmin(admin.ModelAdmin):
-    list_display = ('user', 'plan', 'status', 'start_date', 'end_date', 'days_remaining')
-    list_filter = ('status', 'plan', 'auto_renew')
+    list_display = ('user', 'plan', 'business_type', 'status', 'start_date', 'end_date', 'days_remaining')
+    list_filter = ('status', 'plan', 'business_type', 'auto_renew')
     search_fields = ('user__username', 'user__email')
     date_hierarchy = 'created_at'
     
