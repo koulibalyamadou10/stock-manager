@@ -21,14 +21,14 @@
             
             <!-- Main Heading -->
             <h1 class="text-4xl md:text-6xl lg:text-7xl font-bold mb-6 leading-tight">
-                Gérez votre stock
-                <span class="block text-yellow-300">intelligemment</span>
+                StockManager Pro
+                <span class="block text-yellow-300">Gérez votre stock intelligemment !</span>
             </h1>
             
             <!-- Subtitle -->
             <p class="text-xl md:text-2xl mb-8 text-blue-100 max-w-3xl mx-auto leading-relaxed">
-                Solution complète de gestion de stock et facturation adaptée aux entreprises guinéennes. 
-                De la petite boutique à la grande entreprise.
+                Système de Gestion de Stock Intelligent développé avec ❤️ en Guinée pour les entreprises africaines. 
+                Des petits commerçants aux grandes entreprises.
             </p>
             
             <!-- CTA Buttons -->
@@ -48,19 +48,19 @@
             <!-- Trust Indicators -->
             <div class="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
                 <div>
-                    <div class="text-3xl font-bold text-yellow-300">{{ stats.clients_satisfaits }}+</div>
+                    <div class="text-3xl font-bold text-yellow-300">1500+</div>
                     <div class="text-blue-200">Clients satisfaits</div>
                 </div>
                 <div>
-                    <div class="text-3xl font-bold text-yellow-300">{{ stats.entreprises_actives }}+</div>
+                    <div class="text-3xl font-bold text-yellow-300">850+</div>
                     <div class="text-blue-200">Entreprises actives</div>
                 </div>
                 <div>
-                    <div class="text-3xl font-bold text-yellow-300">{{ stats.factures_generees|floatformat:0 }}+</div>
+                    <div class="text-3xl font-bold text-yellow-300">45K+</div>
                     <div class="text-blue-200">Factures générées</div>
                 </div>
                 <div>
-                    <div class="text-3xl font-bold text-yellow-300">{{ stats.economies_realisees|floatformat:0 }}</div>
+                    <div class="text-3xl font-bold text-yellow-300">2.5M</div>
                     <div class="text-blue-200">GNF économisés</div>
                 </div>
             </div>
@@ -73,12 +73,225 @@
     </div>
 </section>
 
-<!-- Features Overview -->
+<!-- Plans d'abonnement Section -->
+<section class="py-20 bg-gray-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="text-center mb-16">
+            <h2 class="text-4xl font-bold text-gray-900 mb-4">
+                🎯 Nos Offres d'Abonnement
+            </h2>
+            <p class="text-xl text-gray-600 max-w-3xl mx-auto">
+                Trois niveaux d'abonnement adaptés à tous types d'entreprises, 
+                des petits commerçants aux grandes entreprises.
+            </p>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+            <!-- Plan Gratuit -->
+            <div class="bg-white rounded-2xl p-8 border border-gray-200 shadow-lg hover:shadow-xl transition-shadow duration-300">
+                <div class="text-center mb-8">
+                    <div class="w-16 h-16 bg-green-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                        <span class="text-2xl">💚</span>
+                    </div>
+                    <h3 class="text-2xl font-bold text-gray-900 mb-2">Plan Gratuit</h3>
+                    <div class="text-4xl font-bold text-gray-900 mb-2">0 GNF</div>
+                    <p class="text-gray-500">Pour toujours</p>
+                </div>
+                
+                <p class="text-gray-600 mb-6 text-center font-medium">Idéal pour les petits vendeurs ou commerçants débutants</p>
+                
+                <ul class="space-y-3 mb-8">
+                    <li class="flex items-start">
+                        <i class="fas fa-check text-green-500 mt-1 mr-3"></i>
+                        <span class="text-gray-700">Gestion simple du stock (ajout, sortie, alerte)</span>
+                    </li>
+                    <li class="flex items-start">
+                        <i class="fas fa-check text-green-500 mt-1 mr-3"></i>
+                        <span class="text-gray-700">Enregistrement des ventes quotidiennes</span>
+                    </li>
+                    <li class="flex items-start">
+                        <i class="fas fa-check text-green-500 mt-1 mr-3"></i>
+                        <span class="text-gray-700">Historique des opérations</span>
+                    </li>
+                    <li class="flex items-start">
+                        <i class="fas fa-check text-green-500 mt-1 mr-3"></i>
+                        <span class="text-gray-700">Alertes de stock minimum</span>
+                    </li>
+                    <li class="flex items-start">
+                        <i class="fas fa-check text-green-500 mt-1 mr-3"></i>
+                        <span class="text-gray-700">Interface mobile responsive</span>
+                    </li>
+                    <li class="flex items-start">
+                        <i class="fas fa-check text-green-500 mt-1 mr-3"></i>
+                        <span class="text-gray-700">Support communautaire par WhatsApp</span>
+                    </li>
+                    <li class="flex items-start">
+                        <i class="fas fa-check text-green-500 mt-1 mr-3"></i>
+                        <span class="text-gray-700">1 seul utilisateur</span>
+                    </li>
+                    <li class="flex items-start">
+                        <i class="fas fa-check text-green-500 mt-1 mr-3"></i>
+                        <span class="text-gray-700">Jusqu'à 100 produits</span>
+                    </li>
+                    <li class="flex items-start">
+                        <i class="fas fa-check text-green-500 mt-1 mr-3"></i>
+                        <span class="text-gray-700">10 factures par mois</span>
+                    </li>
+                </ul>
+                
+                <a href="{% url 'subscriptions:pricing' %}" 
+                   class="w-full bg-gray-900 text-white py-3 px-6 rounded-lg font-semibold hover:bg-gray-800 transition-colors duration-200 text-center block">
+                    Commencer gratuitement
+                </a>
+            </div>
+
+            <!-- Plan Complet -->
+            <div class="bg-white rounded-2xl p-8 border-2 border-green-500 shadow-xl transform scale-105 relative">
+                <div class="absolute -top-4 left-1/2 transform -translate-x-1/2">
+                    <span class="bg-green-500 text-white px-4 py-2 rounded-full text-sm font-semibold">
+                        🔥 Recommandé
+                    </span>
+                </div>
+                
+                <div class="text-center mb-8">
+                    <div class="w-16 h-16 bg-green-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                        <span class="text-2xl">🔥</span>
+                    </div>
+                    <h3 class="text-2xl font-bold text-gray-900 mb-2">Plan Complet</h3>
+                    <div class="text-4xl font-bold text-gray-900 mb-2">80 000 <span class="text-lg font-normal text-gray-600">GNF</span></div>
+                    <p class="text-gray-500">par mois</p>
+                </div>
+                
+                <p class="text-gray-600 mb-6 text-center font-medium">Pour les commerces structurés : boutiques, librairies, points de vente</p>
+                
+                <ul class="space-y-3 mb-8">
+                    <li class="flex items-start">
+                        <i class="fas fa-check text-green-500 mt-1 mr-3"></i>
+                        <span class="text-gray-700">Toutes les fonctionnalités Gratuit +</span>
+                    </li>
+                    <li class="flex items-start">
+                        <i class="fas fa-check text-green-500 mt-1 mr-3"></i>
+                        <span class="text-gray-700">Multi-utilisateur (jusqu'à 3)</span>
+                    </li>
+                    <li class="flex items-start">
+                        <i class="fas fa-check text-green-500 mt-1 mr-3"></i>
+                        <span class="text-gray-700">Statistiques simplifiées (ventes, produits, charges)</span>
+                    </li>
+                    <li class="flex items-start">
+                        <i class="fas fa-check text-green-500 mt-1 mr-3"></i>
+                        <span class="text-gray-700">Gestion des flux financiers</span>
+                    </li>
+                    <li class="flex items-start">
+                        <i class="fas fa-check text-green-500 mt-1 mr-3"></i>
+                        <span class="text-gray-700">Génération de factures PDF professionnelles</span>
+                    </li>
+                    <li class="flex items-start">
+                        <i class="fas fa-check text-green-500 mt-1 mr-3"></i>
+                        <span class="text-gray-700">Envoi d'email automatique aux clients</span>
+                    </li>
+                    <li class="flex items-start">
+                        <i class="fas fa-check text-green-500 mt-1 mr-3"></i>
+                        <span class="text-gray-700">Sauvegarde cloud et sécurité renforcée</span>
+                    </li>
+                    <li class="flex items-start">
+                        <i class="fas fa-check text-green-500 mt-1 mr-3"></i>
+                        <span class="text-gray-700">Support standard</span>
+                    </li>
+                    <li class="flex items-start">
+                        <i class="fas fa-check text-green-500 mt-1 mr-3"></i>
+                        <span class="text-gray-700">Jusqu'à 1000 produits</span>
+                    </li>
+                    <li class="flex items-start">
+                        <i class="fas fa-check text-green-500 mt-1 mr-3"></i>
+                        <span class="text-gray-700">100 factures par mois</span>
+                    </li>
+                </ul>
+                
+                <a href="{% url 'subscriptions:pricing' %}" 
+                   class="w-full bg-green-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-green-700 transition-colors duration-200 text-center block">
+                    Choisir l'offre Complet
+                </a>
+            </div>
+
+            <!-- Plan Premium -->
+            <div class="bg-white rounded-2xl p-8 border border-gray-200 shadow-lg hover:shadow-xl transition-shadow duration-300">
+                <div class="text-center mb-8">
+                    <div class="w-16 h-16 bg-purple-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                        <span class="text-2xl">💎</span>
+                    </div>
+                    <h3 class="text-2xl font-bold text-gray-900 mb-2">Plan Premium</h3>
+                    <div class="text-4xl font-bold text-gray-900 mb-2">200 000 <span class="text-lg font-normal text-gray-600">GNF</span></div>
+                    <p class="text-gray-500">par mois</p>
+                </div>
+                
+                <p class="text-gray-600 mb-6 text-center font-medium">Pour les gestionnaires, franchises, pharmacies, salons, garagistes</p>
+                
+                <ul class="space-y-3 mb-8">
+                    <li class="flex items-start">
+                        <i class="fas fa-check text-blue-500 mt-1 mr-3"></i>
+                        <span class="text-gray-700">Toutes les fonctionnalités Complet +</span>
+                    </li>
+                    <li class="flex items-start">
+                        <i class="fas fa-check text-blue-500 mt-1 mr-3"></i>
+                        <span class="text-gray-700">Nombre illimité de boutiques</span>
+                    </li>
+                    <li class="flex items-start">
+                        <i class="fas fa-check text-blue-500 mt-1 mr-3"></i>
+                        <span class="text-gray-700">Gestion multi-utilisateurs illimitée</span>
+                    </li>
+                    <li class="flex items-start">
+                        <i class="fas fa-check text-blue-500 mt-1 mr-3"></i>
+                        <span class="text-gray-700">Gestion avancée du stock (FIFO, historiques)</span>
+                    </li>
+                    <li class="flex items-start">
+                        <i class="fas fa-check text-blue-500 mt-1 mr-3"></i>
+                        <span class="text-gray-700">Comptabilité simplifiée (charges, rentabilité)</span>
+                    </li>
+                    <li class="flex items-start">
+                        <i class="fas fa-check text-blue-500 mt-1 mr-3"></i>
+                        <span class="text-gray-700">Modules personnalisés selon activité</span>
+                    </li>
+                    <li class="flex items-start">
+                        <i class="fas fa-check text-blue-500 mt-1 mr-3"></i>
+                        <span class="text-gray-700">Exports CSV, sauvegarde automatique</span>
+                    </li>
+                    <li class="flex items-start">
+                        <i class="fas fa-check text-blue-500 mt-1 mr-3"></i>
+                        <span class="text-gray-700">🤖 Accès à l'IA (assistant + prévision ventes)</span>
+                    </li>
+                    <li class="flex items-start">
+                        <i class="fas fa-check text-blue-500 mt-1 mr-3"></i>
+                        <span class="text-gray-700">Support prioritaire 24h/24</span>
+                    </li>
+                    <li class="flex items-start">
+                        <i class="fas fa-check text-blue-500 mt-1 mr-3"></i>
+                        <span class="text-gray-700">Produits illimités</span>
+                    </li>
+                    <li class="flex items-start">
+                        <i class="fas fa-check text-blue-500 mt-1 mr-3"></i>
+                        <span class="text-gray-700">Factures illimitées</span>
+                    </li>
+                    <li class="flex items-start">
+                        <i class="fas fa-check text-blue-500 mt-1 mr-3"></i>
+                        <span class="text-gray-700">Accès API complet</span>
+                    </li>
+                </ul>
+                
+                <a href="{% url 'subscriptions:pricing' %}" 
+                   class="w-full bg-blue-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-blue-700 transition-colors duration-200 text-center block">
+                    Demander une démo
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Fonctionnalités Principales -->
 <section class="py-20 bg-white">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="text-center mb-16">
             <h2 class="text-4xl font-bold text-gray-900 mb-4">
-                Pourquoi choisir <span class="text-gradient">StockManager Pro</span> ?
+                🚀 Fonctionnalités Principales
             </h2>
             <p class="text-xl text-gray-600 max-w-3xl mx-auto">
                 Une solution complète pensée pour les entreprises guinéennes, 
@@ -87,138 +300,110 @@
         </div>
         
         <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <!-- Feature 1 -->
+            <!-- Gestion de Stock -->
             <div class="card-hover bg-white rounded-2xl p-8 border border-gray-100 shadow-lg">
                 <div class="w-16 h-16 feature-icon rounded-2xl flex items-center justify-center mb-6">
                     <i class="fas fa-boxes text-white text-2xl"></i>
                 </div>
-                <h3 class="text-2xl font-bold text-gray-900 mb-4">Gestion de Stock Intelligente</h3>
+                <h3 class="text-2xl font-bold text-gray-900 mb-4">📦 Gestion de Stock Intelligente</h3>
                 <p class="text-gray-600 mb-6">
                     Suivez vos produits en temps réel, recevez des alertes automatiques et optimisez vos niveaux de stock.
                 </p>
                 <ul class="space-y-2 text-sm text-gray-600">
-                    <li class="flex items-center"><i class="fas fa-check text-green-500 mr-2"></i> Alertes stock faible</li>
-                    <li class="flex items-center"><i class="fas fa-check text-green-500 mr-2"></i> Scanner code-barres</li>
-                    <li class="flex items-center"><i class="fas fa-check text-green-500 mr-2"></i> Historique complet</li>
+                    <li class="flex items-center"><i class="fas fa-check text-green-500 mr-2"></i> Suivi en temps réel de tous vos produits</li>
+                    <li class="flex items-center"><i class="fas fa-check text-green-500 mr-2"></i> Alertes automatiques pour les stocks faibles</li>
+                    <li class="flex items-center"><i class="fas fa-check text-green-500 mr-2"></i> Gestion des entrées et sorties de marchandises</li>
+                    <li class="flex items-center"><i class="fas fa-check text-green-500 mr-2"></i> Historique complet des mouvements de stock</li>
+                    <li class="flex items-center"><i class="fas fa-check text-green-500 mr-2"></i> Scanner de codes-barres intégré</li>
                 </ul>
             </div>
             
-            <!-- Feature 2 -->
+            <!-- Facturation -->
             <div class="card-hover bg-white rounded-2xl p-8 border border-gray-100 shadow-lg">
                 <div class="w-16 h-16 feature-icon rounded-2xl flex items-center justify-center mb-6">
                     <i class="fas fa-file-invoice text-white text-2xl"></i>
                 </div>
-                <h3 class="text-2xl font-bold text-gray-900 mb-4">Facturation Professionnelle</h3>
+                <h3 class="text-2xl font-bold text-gray-900 mb-4">💼 Facturation Professionnelle</h3>
                 <p class="text-gray-600 mb-6">
                     Créez des factures PDF professionnelles et envoyez-les directement à vos clients par email.
                 </p>
                 <ul class="space-y-2 text-sm text-gray-600">
-                    <li class="flex items-center"><i class="fas fa-check text-green-500 mr-2"></i> Factures PDF</li>
-                    <li class="flex items-center"><i class="fas fa-check text-green-500 mr-2"></i> Envoi automatique</li>
-                    <li class="flex items-center"><i class="fas fa-check text-green-500 mr-2"></i> Suivi paiements</li>
+                    <li class="flex items-center"><i class="fas fa-check text-green-500 mr-2"></i> Génération automatique de factures PDF</li>
+                    <li class="flex items-center"><i class="fas fa-check text-green-500 mr-2"></i> Modèles personnalisables avec logo d'entreprise</li>
+                    <li class="flex items-center"><i class="fas fa-check text-green-500 mr-2"></i> Envoi direct par email aux clients</li>
+                    <li class="flex items-center"><i class="fas fa-check text-green-500 mr-2"></i> Suivi des paiements et historique</li>
+                    <li class="flex items-center"><i class="fas fa-check text-green-500 mr-2"></i> Gestion des clients et fournisseurs</li>
                 </ul>
             </div>
             
-            <!-- Feature 3 -->
+            <!-- Intelligence Artificielle -->
             <div class="card-hover bg-white rounded-2xl p-8 border border-gray-100 shadow-lg">
                 <div class="w-16 h-16 feature-icon rounded-2xl flex items-center justify-center mb-6">
                     <i class="fas fa-brain text-white text-2xl"></i>
                 </div>
-                <h3 class="text-2xl font-bold text-gray-900 mb-4">Intelligence Artificielle</h3>
+                <h3 class="text-2xl font-bold text-gray-900 mb-4">🤖 Intelligence Artificielle</h3>
                 <p class="text-gray-600 mb-6">
                     Bénéficiez de prédictions de ventes et de recommandations intelligentes pour optimiser votre business.
                 </p>
                 <ul class="space-y-2 text-sm text-gray-600">
-                    <li class="flex items-center"><i class="fas fa-check text-green-500 mr-2"></i> Prédictions ventes</li>
-                    <li class="flex items-center"><i class="fas fa-check text-green-500 mr-2"></i> Recommandations</li>
-                    <li class="flex items-center"><i class="fas fa-check text-green-500 mr-2"></i> Analyses avancées</li>
+                    <li class="flex items-center"><i class="fas fa-check text-green-500 mr-2"></i> Prédictions de ventes basées sur l'historique</li>
+                    <li class="flex items-center"><i class="fas fa-check text-green-500 mr-2"></i> Recommandations de réapprovisionnement</li>
+                    <li class="flex items-center"><i class="fas fa-check text-green-500 mr-2"></i> Détection automatique des tendances</li>
+                    <li class="flex items-center"><i class="fas fa-check text-green-500 mr-2"></i> Optimisation des niveaux de stock</li>
+                    <li class="flex items-center"><i class="fas fa-check text-green-500 mr-2"></i> Assistant intelligent pour la prise de décision</li>
                 </ul>
             </div>
         </div>
     </div>
 </section>
 
-<!-- Pricing Preview -->
+<!-- Méthodes de Paiement -->
 <section class="py-20 bg-gray-50">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="text-center mb-16">
             <h2 class="text-4xl font-bold text-gray-900 mb-4">
-                Des plans adaptés à <span class="text-gradient">chaque entreprise</span>
+                💳 Méthodes de Paiement
             </h2>
-            <p class="text-xl text-gray-600 max-w-3xl mx-auto">
-                Commencez gratuitement et évoluez selon vos besoins. 
-                Tous nos plans incluent le support en français.
+            <p class="text-xl text-gray-600">
+                Nous acceptons plusieurs moyens de paiement pour votre convenance
             </p>
         </div>
         
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-            {% for plan in plans %}
-            <div class="card-hover bg-white rounded-2xl p-8 border border-gray-200 shadow-lg {% if plan.plan_type == 'complete' %}ring-2 ring-primary-500 transform scale-105{% endif %}">
-                {% if plan.plan_type == 'complete' %}
-                <div class="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                    <span class="bg-primary-500 text-white px-4 py-2 rounded-full text-sm font-semibold">
-                        Recommandé
-                    </span>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
+            <div class="bg-white rounded-2xl p-8 shadow-lg text-center">
+                <div class="w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-credit-card text-blue-600 text-2xl"></i>
                 </div>
-                {% endif %}
-                
-                <div class="text-center mb-8">
-                    <h3 class="text-2xl font-bold text-gray-900 mb-2">{{ plan.name }}</h3>
-                    <div class="text-4xl font-bold text-gray-900 mb-2">
-                        {% if plan.price == 0 %}
-                            Gratuit
-                        {% else %}
-                            {{ plan.price|floatformat:0 }} <span class="text-lg font-normal text-gray-600">GNF</span>
-                        {% endif %}
-                    </div>
-                    {% if plan.price > 0 %}
-                    <p class="text-gray-500">par mois</p>
-                    {% endif %}
-                </div>
-                
-                <p class="text-gray-600 mb-6 text-center">{{ plan.description }}</p>
-                
-                <ul class="space-y-3 mb-8">
-                    {% for feature in plan.features|slice:":4" %}
-                    <li class="flex items-start">
-                        <i class="fas fa-check text-green-500 mt-1 mr-3"></i>
-                        <span class="text-gray-700">{{ feature }}</span>
-                    </li>
-                    {% endfor %}
-                    {% if plan.features|length > 4 %}
-                    <li class="text-gray-500 text-sm">+ {{ plan.features|length|add:"-4" }} autres fonctionnalités</li>
-                    {% endif %}
-                </ul>
-                
-                <a href="{% url 'subscriptions:subscribe' plan.id %}" 
-                   class="w-full {% if plan.plan_type == 'complete' %}btn-primary text-white{% else %}bg-gray-100 text-gray-900 hover:bg-gray-200{% endif %} py-3 px-6 rounded-xl font-semibold text-center block transition-all duration-300">
-                    {% if plan.plan_type == 'free' %}
-                        Commencer gratuitement
-                    {% else %}
-                        Choisir {{ plan.name }}
-                    {% endif %}
-                </a>
+                <h3 class="text-xl font-bold text-gray-900 mb-2">💳 Lengo Pay</h3>
+                <p class="text-gray-600">Paiement sécurisé en ligne</p>
             </div>
-            {% endfor %}
-        </div>
-        
-        <div class="text-center mt-12">
-            <a href="{% url 'subscriptions:pricing' %}" 
-               class="inline-flex items-center text-primary-600 hover:text-primary-700 font-semibold">
-                Voir tous les détails des plans
-                <i class="fas fa-arrow-right ml-2"></i>
-            </a>
+            
+            <div class="bg-white rounded-2xl p-8 shadow-lg text-center">
+                <div class="w-16 h-16 bg-orange-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-mobile-alt text-orange-600 text-2xl"></i>
+                </div>
+                <h3 class="text-xl font-bold text-gray-900 mb-2">📱 Mobile Money</h3>
+                <p class="text-gray-600">Orange Money, MTN Money</p>
+            </div>
+            
+            <div class="bg-white rounded-2xl p-8 shadow-lg text-center">
+                <div class="w-16 h-16 bg-purple-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-university text-purple-600 text-2xl"></i>
+                </div>
+                <h3 class="text-xl font-bold text-gray-900 mb-2">🏦 Virement bancaire</h3>
+                <p class="text-gray-600">Transfert bancaire direct</p>
+            </div>
         </div>
     </div>
 </section>
 
-<!-- Guinea-Specific Features -->
+<!-- Spécificités Guinéennes -->
 <section class="py-20 bg-white">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="text-center mb-16">
             <div class="inline-flex items-center px-4 py-2 bg-guinea-green/10 rounded-full text-guinea-green font-semibold mb-4">
                 <i class="fas fa-flag mr-2"></i>
-                Conçu pour la Guinée
+                🇬🇳 Spécificités Guinéennes
             </div>
             <h2 class="text-4xl font-bold text-gray-900 mb-4">
                 Adapté au marché <span class="text-gradient">guinéen</span>
@@ -233,15 +418,15 @@
                 <div class="w-16 h-16 bg-guinea-green/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
                     <i class="fas fa-coins text-guinea-green text-2xl"></i>
                 </div>
-                <h3 class="text-lg font-semibold text-gray-900 mb-2">Prix en GNF</h3>
-                <p class="text-gray-600">Tous les prix sont affichés en Francs Guinéens pour votre commodité.</p>
+                <h3 class="text-lg font-semibold text-gray-900 mb-2">💰 Prix en Francs Guinéens (GNF)</h3>
+                <p class="text-gray-600">Tous les prix sont affichés en devise locale pour votre commodité.</p>
             </div>
             
             <div class="text-center">
                 <div class="w-16 h-16 bg-guinea-yellow/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
                     <i class="fas fa-mobile-alt text-guinea-yellow text-2xl"></i>
                 </div>
-                <h3 class="text-lg font-semibold text-gray-900 mb-2">Mobile Money</h3>
+                <h3 class="text-lg font-semibold text-gray-900 mb-2">📱 Mobile Money</h3>
                 <p class="text-gray-600">Paiements via Orange Money et MTN Money pour plus de facilité.</p>
             </div>
             
@@ -249,7 +434,7 @@
                 <div class="w-16 h-16 bg-guinea-red/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
                     <i class="fas fa-headset text-guinea-red text-2xl"></i>
                 </div>
-                <h3 class="text-lg font-semibold text-gray-900 mb-2">Support Local</h3>
+                <h3 class="text-lg font-semibold text-gray-900 mb-2">🇫🇷 Interface en français</h3>
                 <p class="text-gray-600">Équipe de support basée en Guinée, parlant français et langues locales.</p>
             </div>
             
@@ -257,19 +442,101 @@
                 <div class="w-16 h-16 bg-primary-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
                     <i class="fas fa-store text-primary-600 text-2xl"></i>
                 </div>
-                <h3 class="text-lg font-semibold text-gray-900 mb-2">Commerce Local</h3>
+                <h3 class="text-lg font-semibold text-gray-900 mb-2">🏪 Commerce Local</h3>
                 <p class="text-gray-600">Fonctionnalités adaptées aux pratiques commerciales guinéennes.</p>
             </div>
         </div>
     </div>
 </section>
 
-<!-- Testimonials -->
+<!-- Avantages Concurrentiels -->
 <section class="py-20 bg-gray-50">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="text-center mb-16">
             <h2 class="text-4xl font-bold text-gray-900 mb-4">
-                Ce que disent nos <span class="text-gradient">clients</span>
+                🏆 Avantages Concurrentiels
+            </h2>
+            <p class="text-xl text-gray-600">
+                Pourquoi choisir StockManager Pro pour votre entreprise
+            </p>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <!-- Petites Entreprises -->
+            <div class="bg-white rounded-2xl p-8 shadow-lg">
+                <div class="w-16 h-16 bg-green-100 rounded-2xl flex items-center justify-center mb-6">
+                    <i class="fas fa-seedling text-green-600 text-2xl"></i>
+                </div>
+                <h3 class="text-2xl font-bold text-gray-900 mb-4">Pour les Petites Entreprises</h3>
+                <ul class="space-y-3 text-gray-600">
+                    <li class="flex items-start">
+                        <i class="fas fa-check text-green-500 mt-1 mr-3"></i>
+                        <span><strong>Gratuit pour commencer</strong> - Aucun coût initial</span>
+                    </li>
+                    <li class="flex items-start">
+                        <i class="fas fa-check text-green-500 mt-1 mr-3"></i>
+                        <span><strong>Interface simple</strong> - Facile à prendre en main</span>
+                    </li>
+                    <li class="flex items-start">
+                        <i class="fas fa-check text-green-500 mt-1 mr-3"></i>
+                        <span><strong>Support en français</strong> - Assistance dans votre langue</span>
+                    </li>
+                </ul>
+            </div>
+            
+            <!-- Entreprises Moyennes -->
+            <div class="bg-white rounded-2xl p-8 shadow-lg">
+                <div class="w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center mb-6">
+                    <i class="fas fa-building text-blue-600 text-2xl"></i>
+                </div>
+                <h3 class="text-2xl font-bold text-gray-900 mb-4">Pour les Entreprises Moyennes</h3>
+                <ul class="space-y-3 text-gray-600">
+                    <li class="flex items-start">
+                        <i class="fas fa-check text-green-500 mt-1 mr-3"></i>
+                        <span><strong>Facturation professionnelle</strong> - Documents conformes</span>
+                    </li>
+                    <li class="flex items-start">
+                        <i class="fas fa-check text-green-500 mt-1 mr-3"></i>
+                        <span><strong>Multi-utilisateurs</strong> - Travail en équipe</span>
+                    </li>
+                    <li class="flex items-start">
+                        <i class="fas fa-check text-green-500 mt-1 mr-3"></i>
+                        <span><strong>Rapports détaillés</strong> - Pilotage de l'activité</span>
+                    </li>
+                </ul>
+            </div>
+            
+            <!-- Grandes Entreprises -->
+            <div class="bg-white rounded-2xl p-8 shadow-lg">
+                <div class="w-16 h-16 bg-purple-100 rounded-2xl flex items-center justify-center mb-6">
+                    <i class="fas fa-industry text-purple-600 text-2xl"></i>
+                </div>
+                <h3 class="text-2xl font-bold text-gray-900 mb-4">Pour les Grandes Entreprises</h3>
+                <ul class="space-y-3 text-gray-600">
+                    <li class="flex items-start">
+                        <i class="fas fa-check text-green-500 mt-1 mr-3"></i>
+                        <span><strong>IA et prédictions</strong> - Optimisation intelligente</span>
+                    </li>
+                    <li class="flex items-start">
+                        <i class="fas fa-check text-green-500 mt-1 mr-3"></i>
+                        <span><strong>API complète</strong> - Intégration avec vos systèmes</span>
+                    </li>
+                    <li class="flex items-start">
+                        <i class="fas fa-check text-green-500 mt-1 mr-3"></i>
+                        <span><strong>Support 24h/24</strong> - Assistance prioritaire</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Témoignages -->
+<section class="py-20 bg-white">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="text-center mb-16">
+            <h2 class="text-4xl font-bold text-gray-900 mb-4">
+                🎯 Témoignages Clients
             </h2>
             <p class="text-xl text-gray-600">
                 Découvrez comment StockManager Pro transforme les entreprises guinéennes
@@ -277,7 +544,7 @@
         </div>
         
         <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div class="bg-white rounded-2xl p-8 shadow-lg">
+            <div class="bg-white rounded-2xl p-8 shadow-lg border border-gray-100">
                 <div class="flex items-center mb-4">
                     <div class="w-12 h-12 bg-primary-100 rounded-full flex items-center justify-center mr-4">
                         <i class="fas fa-user text-primary-600"></i>
@@ -296,11 +563,11 @@
                 </div>
                 <p class="text-gray-700 italic">
                     "StockManager Pro a révolutionné la gestion de ma boutique. 
-                    Je peux maintenant suivre mes stocks en temps réel et mes ventes ont augmenté de 30%."
+                    Je peux maintenant suivre mes stocks en temps réel et mes ventes ont augmenté de 30%. Je recommande vivement !"
                 </p>
             </div>
             
-            <div class="bg-white rounded-2xl p-8 shadow-lg">
+            <div class="bg-white rounded-2xl p-8 shadow-lg border border-gray-100">
                 <div class="flex items-center mb-4">
                     <div class="w-12 h-12 bg-primary-100 rounded-full flex items-center justify-center mr-4">
                         <i class="fas fa-user text-primary-600"></i>
@@ -323,7 +590,7 @@
                 </p>
             </div>
             
-            <div class="bg-white rounded-2xl p-8 shadow-lg">
+            <div class="bg-white rounded-2xl p-8 shadow-lg border border-gray-100">
                 <div class="flex items-center mb-4">
                     <div class="w-12 h-12 bg-primary-100 rounded-full flex items-center justify-center mr-4">
                         <i class="fas fa-user text-primary-600"></i>
@@ -342,8 +609,56 @@
                 </div>
                 <p class="text-gray-700 italic">
                     "Interface simple et efficace. Même sans être experte en informatique, 
-                    j'ai pu commencer à utiliser l'application dès le premier jour."
+                    j'ai pu commencer à utiliser l'application dès le premier jour. Parfait pour débuter dans le commerce."
                 </p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Partenaires -->
+<section class="py-20 bg-gray-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="text-center mb-16">
+            <h2 class="text-4xl font-bold text-gray-900 mb-4">
+                🤝 Nos Partenaires
+            </h2>
+            <p class="text-xl text-gray-600">
+                Nous travaillons avec les leaders du marché guinéen
+            </p>
+        </div>
+        
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-8">
+            <div class="bg-white rounded-xl p-6 shadow-lg text-center">
+                <div class="w-16 h-16 bg-blue-100 rounded-xl flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-credit-card text-blue-600 text-2xl"></i>
+                </div>
+                <h3 class="font-semibold text-gray-900">Lengo Pay</h3>
+                <p class="text-sm text-gray-600">Partenaire paiement officiel</p>
+            </div>
+            
+            <div class="bg-white rounded-xl p-6 shadow-lg text-center">
+                <div class="w-16 h-16 bg-orange-100 rounded-xl flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-mobile-alt text-orange-600 text-2xl"></i>
+                </div>
+                <h3 class="font-semibold text-gray-900">Orange Guinée</h3>
+                <p class="text-sm text-gray-600">Partenaire Mobile Money</p>
+            </div>
+            
+            <div class="bg-white rounded-xl p-6 shadow-lg text-center">
+                <div class="w-16 h-16 bg-yellow-100 rounded-xl flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-mobile-alt text-yellow-600 text-2xl"></i>
+                </div>
+                <h3 class="font-semibold text-gray-900">MTN Guinée</h3>
+                <p class="text-sm text-gray-600">Partenaire Mobile Money</p>
+            </div>
+            
+            <div class="bg-white rounded-xl p-6 shadow-lg text-center">
+                <div class="w-16 h-16 bg-green-100 rounded-xl flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-university text-green-600 text-2xl"></i>
+                </div>
+                <h3 class="font-semibold text-gray-900">Banques locales</h3>
+                <p class="text-sm text-gray-600">Partenaires financiers</p>
             </div>
         </div>
     </div>
@@ -376,6 +691,12 @@
             <i class="fas fa-shield-alt mr-2"></i>
             Aucune carte de crédit requise • Support gratuit • Données sécurisées
         </p>
+        
+        <div class="mt-8 text-center">
+            <p class="text-blue-100 italic">
+                <strong>StockManager Pro</strong> - <em>Développé avec ❤️ en Guinée pour les entreprises africaines</em>
+            </p>
+        </div>
     </div>
 </section>
 {% endblock %}
