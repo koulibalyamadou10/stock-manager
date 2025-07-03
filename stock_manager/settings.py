@@ -25,6 +25,7 @@ INSTALLED_APPS = [
     'inventory',
     'billing',
     'subscriptions',  # App pour les abonnements
+    'accounts',  # App pour la gestion des comptes utilisateurs
 ]
 
 MIDDLEWARE = [
@@ -104,7 +105,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Login URLs
 LOGIN_URL = '/accounts/login/'
-LOGIN_REDIRECT_URL = '/subscriptions/'  # Rediriger vers la page de tarification après connexion
+LOGIN_REDIRECT_URL = '/inventory/'  # Rediriger vers le tableau de bord après connexion
 LOGOUT_REDIRECT_URL = '/'  # Rediriger vers la page d'accueil après déconnexion
 
 # REST Framework settings

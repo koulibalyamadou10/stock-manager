@@ -1,0 +1,147 @@
+{% extends 'inventory/base.html' %}
+
+{% block title %}Paiement en attente - StockManager Pro{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto">
+    <!-- Page Header -->
+    <div class="mb-8 text-center">
+        <h1 class="text-3xl font-bold text-gray-900">Paiement en cours</h1>
+        <p class="mt-2 text-gray-600">Votre paiement est en cours de traitement</p>
+    </div>
+
+    <!-- Payment Status -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-8 text-center" x-data="{ status: 'pending' }" x-init="checkPaymentStatus()">
+        <!-- Pending State -->
+        <div x-show="status === 'pending'">
+            <div class="w-20 h-20 mx-auto mb-6 rounded-full border-4 border-blue-200 border-t-blue-600 animate-spin"></div>
+            <h3 class="text-xl font-semibold text-gray-900 mb-4">Paiement en attente</h3>
+            <p class="text-gray-600 mb-6">
+                Votre paiement est en cours de traitement. Veuillez patienter...
+            </p>
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6 text-left">
+                <div class="flex items-start">
+                    <i class="fas fa-info-circle text-blue-600 mt-1 mr-3"></i>
+                    <div class="text-sm text-blue-800">
+                        <p class="font-semibold mb-1">Information</p>
+                        <p>Si vous avez été redirigé vers une page de paiement, veuillez compléter votre paiement dans cette fenêtre. Une fois le paiement effectué, vous serez automatiquement redirigé vers votre compte.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="flex space-x-4 justify-center">
+                <a href="{% url 'subscriptions:pricing' %}" 
+                   class="bg-gray-200 text-gray-800 px-6 py-2 rounded-lg hover:bg-gray-300 transition-colors duration-200">
+                    Annuler
+                </a>
+                <button @click="checkPaymentStatus()" 
+                        class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors duration-200">
+                    Vérifier le statut
+                </button>
+            </div>
+        </div>
+        
+        <!-- Completed State -->
+        <div x-show="status === 'completed'" x-cloak>
+            <div class="w-20 h-20 mx-auto mb-6 bg-green-100 rounded-full flex items-center justify-center">
+                <i class="fas fa-check text-green-600 text-3xl"></i>
+            </div>
+            <h3 class="text-xl font-semibold text-gray-900 mb-4">Paiement réussi!</h3>
+            <p class="text-gray-600 mb-6">
+                Votre paiement a été traité avec succès. Votre abonnement est maintenant actif.
+            </p>
+            <a href="/inventory/" 
+               class="bg-green-600 text-white px-8 py-3 rounded-lg font-semibold hover:bg-green-700 transition-colors duration-200 inline-block">
+                Accéder à mon compte
+            </a>
+        </div>
+        
+        <!-- Failed State -->
+        <div x-show="status === 'failed'" x-cloak>
+            <div class="w-20 h-20 mx-auto mb-6 bg-red-100 rounded-full flex items-center justify-center">
+                <i class="fas fa-times text-red-600 text-3xl"></i>
+            </div>
+            <h3 class="text-xl font-semibold text-gray-900 mb-4">Paiement échoué</h3>
+            <p class="text-gray-600 mb-6">
+                Votre paiement n'a pas pu être traité. Veuillez réessayer ou choisir une autre méthode de paiement.
+            </p>
+            <div class="flex space-x-4 justify-center">
+                <a href="{% url 'subscriptions:pricing' %}" 
+                   class="bg-gray-200 text-gray-800 px-6 py-2 rounded-lg hover:bg-gray-300 transition-colors duration-200">
+                    Retour aux plans
+                </a>
+                <a href="{% url 'subscriptions:subscribe' payment.subscription.plan.id %}" 
+                   class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors duration-200">
+                    Réessayer
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Payment Details -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mt-8">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">Détails du paiement</h3>
+        
+        <div class="space-y-4">
+            <div class="flex justify-between">
+                <span class="text-gray-600">Plan</span>
+                <span class="font-medium text-gray-900">{{ payment.subscription.plan.name }}</span>
+            </div>
+            <div class="flex justify-between">
+                <span class="text-gray-600">Montant</span>
+                <span class="font-medium text-gray-900">{{ payment.amount|floatformat:0 }} {{ payment.currency }}</span>
+            </div>
+            <div class="flex justify-between">
+                <span class="text-gray-600">Méthode de paiement</span>
+                <span class="font-medium text-gray-900">{{ payment.get_payment_method_display }}</span>
+            </div>
+            <div class="flex justify-between">
+                <span class="text-gray-600">Date</span>
+                <span class="font-medium text-gray-900">{{ payment.created_at|date:"d/m/Y H:i" }}</span>
+            </div>
+            <div class="flex justify-between">
+                <span class="text-gray-600">Référence</span>
+                <span class="font-medium text-gray-900">{{ payment.id }}</span>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function checkPaymentStatus() {
+        // Vérifier le statut du paiement toutes les 5 secondes
+        const checkStatus = async () => {
+            try {
+                const response = await fetch('/subscriptions/check-payment/{{ payment.id }}/');
+                const data = await response.json();
+                
+                if (data.status === 'completed') {
+                    this.status = 'completed';
+                    
+                    // Rediriger après 2 secondes
+                    if (data.redirect_url) {
+                        setTimeout(() => {
+                            window.location.href = data.redirect_url;
+                        }, 2000);
+                    }
+                    
+                    return;
+                } else if (data.status === 'failed') {
+                    this.status = 'failed';
+                    return;
+                }
+                
+                // Continuer à vérifier si le statut est toujours en attente
+                setTimeout(checkStatus, 5000);
+                
+            } catch (error) {
+                console.error('Erreur lors de la vérification du statut:', error);
+                setTimeout(checkStatus, 5000);
+            }
+        };
+        
+        checkStatus();
+    }
+</script>
+{% endblock %}

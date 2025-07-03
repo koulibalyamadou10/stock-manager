@@ -1,0 +1,116 @@
+{% extends 'landing/base.html' %}
+
+{% block title %}Connexion - StockManager Pro{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="pt-32 pb-20 gradient-bg hero-pattern">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-white">
+        <h1 class="text-4xl md:text-6xl font-bold mb-6">
+            Connexion
+        </h1>
+        <p class="text-xl md:text-2xl text-blue-100 max-w-3xl mx-auto">
+            Accédez à votre compte StockManager Pro
+        </p>
+    </div>
+</section>
+
+<!-- Login Form -->
+<section class="py-20 bg-white">
+    <div class="max-w-md mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="bg-white rounded-xl shadow-lg border border-gray-200 p-8">
+            <h2 class="text-2xl font-bold text-gray-900 mb-6">Connexion</h2>
+            
+            {% if form.errors %}
+                <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-6">
+                    <p>Nom d'utilisateur ou mot de passe incorrect. Veuillez réessayer.</p>
+                </div>
+            {% endif %}
+            
+            <form method="post" class="space-y-6">
+                {% csrf_token %}
+                
+                <div>
+                    <label for="id_username" class="block text-sm font-medium text-gray-700 mb-2">
+                        Nom d'utilisateur
+                    </label>
+                    <input type="text" name="username" id="id_username" required
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                </div>
+                
+                <div>
+                    <label for="id_password" class="block text-sm font-medium text-gray-700 mb-2">
+                        Mot de passe
+                    </label>
+                    <input type="password" name="password" id="id_password" required
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                </div>
+                
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <input type="checkbox" id="remember_me" name="remember_me"
+                               class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                        <label for="remember_me" class="ml-2 block text-sm text-gray-700">
+                            Se souvenir de moi
+                        </label>
+                    </div>
+                    <a href="{% url 'password_reset' %}" class="text-sm text-blue-600 hover:underline">
+                        Mot de passe oublié ?
+                    </a>
+                </div>
+                
+                <input type="hidden" name="next" value="{{ next }}">
+                
+                <button type="submit" 
+                        class="w-full bg-blue-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-blue-700 transition-colors duration-200">
+                    Se connecter
+                </button>
+            </form>
+            
+            <div class="mt-6 text-center">
+                <p class="text-sm text-gray-600">
+                    Vous n'avez pas de compte ? 
+                    <a href="{% url 'accounts:register' %}" class="text-blue-600 hover:underline">Inscrivez-vous</a>
+                </p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Benefits Section -->
+<section class="py-20 bg-gray-50">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="text-center mb-12">
+            <h2 class="text-3xl font-bold text-gray-900 mb-4">
+                Pourquoi se connecter ?
+            </h2>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div class="bg-white rounded-xl p-6 shadow-lg text-center">
+                <div class="w-16 h-16 bg-blue-100 rounded-xl flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-boxes text-blue-600 text-2xl"></i>
+                </div>
+                <h3 class="text-lg font-semibold text-gray-900 mb-2">Gérez votre stock</h3>
+                <p class="text-gray-600">Suivez vos produits en temps réel et optimisez votre inventaire</p>
+            </div>
+            
+            <div class="bg-white rounded-xl p-6 shadow-lg text-center">
+                <div class="w-16 h-16 bg-green-100 rounded-xl flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-file-invoice text-green-600 text-2xl"></i>
+                </div>
+                <h3 class="text-lg font-semibold text-gray-900 mb-2">Créez des factures</h3>
+                <p class="text-gray-600">Générez des factures professionnelles pour vos clients</p>
+            </div>
+            
+            <div class="bg-white rounded-xl p-6 shadow-lg text-center">
+                <div class="w-16 h-16 bg-purple-100 rounded-xl flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-chart-line text-purple-600 text-2xl"></i>
+                </div>
+                <h3 class="text-lg font-semibold text-gray-900 mb-2">Analysez vos données</h3>
+                <p class="text-gray-600">Accédez à des statistiques détaillées sur votre activité</p>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

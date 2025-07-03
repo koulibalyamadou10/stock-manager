@@ -10,6 +10,7 @@ urlpatterns = [
     
     # Authentication URLs
     path('accounts/', include('django.contrib.auth.urls')),
+    path('accounts/', include('accounts.urls', namespace='accounts')),
     
     # Landing page (site vitrine) - page d'accueil
     path('', include('landing.urls')),
